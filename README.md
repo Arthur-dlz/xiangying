@@ -6,7 +6,21 @@
 
 乡映是一款面向 Windows 的中文网页媒体嗅探、下载与本地片库工具，基于 [MediaGo](https://github.com/mediago-dev/mediago) 二次开发，服务于乡村活动室、学校及其他需要离线放映的场景。
 
-[English](README.en.md) · [下载](https://github.com/Arthur-dlz/xiangying/releases) · [使用说明](docs/xiangying/USAGE.md) · [参与维护](CONTRIBUTING.md) · [后续计划](ROADMAP.md)
+[English](README.en.md) · [使用说明](docs/xiangying/USAGE.md) · [所有版本](https://github.com/Arthur-dlz/xiangying/releases) · [参与维护](CONTRIBUTING.md) · [后续计划](ROADMAP.md)
+
+## 下载与开始使用
+
+### [⬇ 下载 Windows x64 完整程序（ZIP，约 255 MiB）](https://github.com/Arthur-dlz/xiangying/releases/download/v0.1.0-alpha.3/xiangying-0.1.0-alpha.3-windows-x64-20261010.zip)
+
+当前已发布 **v0.1.0-alpha.3 预发行版**，适用于 Windows 10/11 x64，提供完整目录版。
+
+[查看本版发布说明](https://github.com/Arthur-dlz/xiangying/releases/tag/v0.1.0-alpha.3) · [下载校验文件](https://github.com/Arthur-dlz/xiangying/releases/download/v0.1.0-alpha.3/SHA256SUMS.txt)
+
+1. 点击上面的下载链接，保存完整程序 ZIP。
+2. 右键 ZIP，选择“全部解压”，保留整个解压目录。
+3. 打开解压后的文件夹，双击 **`乡映.exe`**。`resources`、`locales` 和 DLL 等配套文件需要一起保留。
+
+Releases 中自动生成的 `Source code (zip)` / `Source code (tar.gz)` 是供开发使用的源码；普通使用者请选择上面的完整程序 ZIP。下载、转换目标目前仅支持 **NTFS**。
 
 ## 为什么做乡映
 
@@ -32,7 +46,7 @@
 
 项目已经**初步可用，仍处于早期版本，后续持续维护**。当前交付为 `0.1.0-alpha.3`，支持 Windows 10/11 x64，提供完整目录版 ZIP。
 
-在 [Releases](https://github.com/Arthur-dlz/xiangying/releases) 有附件时，可下载完整 ZIP、解压后运行 `乡映.exe`。请保留 `resources`、`locales` 和 DLL 等配套文件。正式放映前，建议在实际电脑和放映设备上检查影片能否完整播放。
+本版完整程序已发布，下载链接和解压步骤见上方“下载与开始使用”。正式放映前，建议在实际电脑和放映设备上检查影片能否完整播放。
 
 当前范围内的原 77 项回归合同已闭合：76 项通过、1 项不适用。证据层及适用范围见 [验收摘要](docs/xiangying/ACCEPTANCE.md)。项目尚不承诺所有网站兼容或所有外部影片均可下载。
 

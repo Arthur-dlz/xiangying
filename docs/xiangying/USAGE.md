@@ -2,7 +2,15 @@
 
 ## 获取程序
 
-在本仓库 Releases 有 Windows x64 附件时，下载完整ZIP并解压到独立目录，运行 `乡映.exe`。保留全部配套目录和文件。当前为早期目录版，未提供安装向导。
+当前已发布 **v0.1.0-alpha.3 预发行版（Windows 10/11 x64）**。
+
+**[下载完整程序 ZIP（约 255 MiB）](https://github.com/Arthur-dlz/xiangying/releases/download/v0.1.0-alpha.3/xiangying-0.1.0-alpha.3-windows-x64-20261010.zip)** · [本版发布说明](https://github.com/Arthur-dlz/xiangying/releases/tag/v0.1.0-alpha.3) · [校验文件](https://github.com/Arthur-dlz/xiangying/releases/download/v0.1.0-alpha.3/SHA256SUMS.txt)
+
+1. 保存上面的完整程序ZIP，右键选择“全部解压”。
+2. 打开解压后的文件夹，双击 `乡映.exe`。
+3. 保留 `resources`、`locales`、DLL 等全部配套文件，之后从这个目录启动程序。
+
+文件名为 `xiangying-0.1.0-alpha.3-windows-x64-20261010.zip`。Releases自动生成的 `Source code` 附件供开发使用；普通使用者选择完整程序ZIP。当前为早期目录版，未提供安装向导。
 
 ## 准备影片
 

@@ -6,6 +6,20 @@
 
 [中文](README.md) · [Repository](https://github.com/Arthur-dlz/xiangying) · [Releases](https://github.com/Arthur-dlz/xiangying/releases)
 
+## Download and run
+
+### [⬇ Download the complete Windows x64 application (ZIP, about 255 MiB)](https://github.com/Arthur-dlz/xiangying/releases/download/v0.1.0-alpha.3/xiangying-0.1.0-alpha.3-windows-x64-20261010.zip)
+
+**v0.1.0-alpha.3 is available as a prerelease** for Windows 10/11 x64.
+
+[Release notes](https://github.com/Arthur-dlz/xiangying/releases/tag/v0.1.0-alpha.3) · [Checksums](https://github.com/Arthur-dlz/xiangying/releases/download/v0.1.0-alpha.3/SHA256SUMS.txt)
+
+1. Download the complete application ZIP above.
+2. Extract the entire ZIP into a folder.
+3. Run **`乡映.exe`**, keeping `resources`, `locales` and all companion files in place.
+
+GitHub's automatic `Source code (zip)` / `Source code (tar.gz)` assets are for development. End users should choose the complete application ZIP. Download/conversion destinations currently require **NTFS**.
+
 Xiangying is a Chinese-language Windows desktop tool for detecting downloadable web media, managing downloads and organizing a local media library. It is derived from [MediaGo](https://github.com/mediago-dev/mediago).
 
 The project began with a request from a village community organizer who wanted to show films to children. Even after purchasing a streaming subscription, some films could not be downloaded, and app-bound offline viewing did not reliably provide files usable on the community computer and projector.
