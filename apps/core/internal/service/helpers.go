@@ -51,7 +51,7 @@ func GetPageTitle(pageURL string, fallback string) string {
 
 // GetPageTitleWithContext stops the request when its caller is cancelled.
 func GetPageTitleWithContext(ctx context.Context, pageURL string, fallback string) string {
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := NewPublicHTTPClient(10 * time.Second)
 	req, err := http.NewRequestWithContext(ctx, "GET", pageURL, nil)
 	if err != nil {
 		return fallback
@@ -156,14 +156,18 @@ func ResolveOutputPath(path string) (bool, string) {
 	candidates := make([]existingOutputCandidate, 0)
 	err = filepath.WalkDir(absolute, func(candidatePath string, entry os.DirEntry, walkErr error) error {
 		if walkErr != nil {
-			return walkErr
+			// Skip unreadable entries instead of aborting the whole walk, so a
+			// playable file found elsewhere in the tree is still returned.
+			return nil
 		}
 		if entry.IsDir() || !hasVideoExtension(candidatePath) {
 			return nil
 		}
 		candidateInfo, infoErr := entry.Info()
 		if infoErr != nil {
-			return infoErr
+			// Transient per-entry stat failures (locked/removed files on
+			// Windows) must not discard already-collected candidates.
+			return nil
 		}
 		if !candidateInfo.Mode().IsRegular() || candidateInfo.Size() == 0 {
 			return nil

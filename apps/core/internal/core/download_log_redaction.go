@@ -6,7 +6,14 @@ import (
 	"strings"
 )
 
-var downloaderLogURLPattern = regexp.MustCompile(`(?i)[a-z][a-z0-9+.-]*://[^\s"'<>]+`)
+var (
+	downloaderLogURLPattern = regexp.MustCompile(`(?i)[a-z][a-z0-9+.-]*://[^\s"'<>]+`)
+	// Matches "scheme://userinfo@" anywhere inside a candidate, including URLs
+	// that url.Parse folds into another URL's path (e.g. two comma-separated
+	// URLs with no whitespace). Relying on parsed.User alone would let a
+	// credential that is not the first authority survive in the path.
+	downloaderLogUserinfoPattern = regexp.MustCompile(`(?i)([a-z][a-z0-9+.-]*://)[^/?#@\s"'<>]*@`)
+)
 
 // redactURLsFromDownloaderLog removes URL credentials and query/fragment data
 // from a downloader console line while preserving the surrounding diagnostics.
@@ -19,6 +26,9 @@ func redactURLsFromDownloaderLog(line string) string {
 			trailing = trimmed[len(trimmed)-1:] + trailing
 			trimmed = trimmed[:len(trimmed)-1]
 		}
+		// Strip userinfo from every URL in the run before parsing, so a second
+		// URL embedded in the first URL's path cannot leak user:pass.
+		trimmed = downloaderLogUserinfoPattern.ReplaceAllString(trimmed, "$1")
 		parsed, err := url.Parse(trimmed)
 		if err != nil {
 			schemeEnd := strings.Index(trimmed, "://")

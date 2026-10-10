@@ -133,44 +133,68 @@ func Sync() {
 	}
 }
 
-// Convenience methods - structured logging
+// Convenience methods - structured logging.
+//
+// All helpers resolve the global logger through activeLogger/activeSugar so
+// that calling them before Init (or after a failed Init) degrades to a no-op
+// instead of panicking on a nil dereference.
+
+var (
+	nopLogger = zap.NewNop()
+	nopSugar  = nopLogger.Sugar()
+)
+
+func activeLogger() *zap.Logger {
+	if Logger != nil {
+		return Logger
+	}
+	return nopLogger
+}
+
+func activeSugar() *zap.SugaredLogger {
+	if Sugar != nil {
+		return Sugar
+	}
+	return nopSugar
+}
+
 func Debug(msg string, fields ...zap.Field) {
-	Logger.Debug(msg, fields...)
+	activeLogger().Debug(msg, fields...)
 }
 
 func Info(msg string, fields ...zap.Field) {
-	Logger.Info(msg, fields...)
+	activeLogger().Info(msg, fields...)
 }
 
 func Warn(msg string, fields ...zap.Field) {
-	Logger.Warn(msg, fields...)
+	activeLogger().Warn(msg, fields...)
 }
 
 func Error(msg string, fields ...zap.Field) {
-	Logger.Error(msg, fields...)
+	activeLogger().Error(msg, fields...)
 }
 
 func Fatal(msg string, fields ...zap.Field) {
-	Logger.Fatal(msg, fields...)
+	activeLogger().Fatal(msg, fields...)
 }
 
 // Convenience methods - formatted logging
 func Debugf(template string, args ...interface{}) {
-	Sugar.Debugf(template, args...)
+	activeSugar().Debugf(template, args...)
 }
 
 func Infof(template string, args ...interface{}) {
-	Sugar.Infof(template, args...)
+	activeSugar().Infof(template, args...)
 }
 
 func Warnf(template string, args ...interface{}) {
-	Sugar.Warnf(template, args...)
+	activeSugar().Warnf(template, args...)
 }
 
 func Errorf(template string, args ...interface{}) {
-	Sugar.Errorf(template, args...)
+	activeSugar().Errorf(template, args...)
 }
 
 func Fatalf(template string, args ...interface{}) {
-	Sugar.Fatalf(template, args...)
+	activeSugar().Fatalf(template, args...)
 }

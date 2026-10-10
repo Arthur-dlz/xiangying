@@ -4,10 +4,18 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 // AppConfig stores startup configuration options passed by flags or environment.
+//
+// Mutable runtime fields (LocalDir/DeleteSegments/Proxy/UseProxy) are guarded
+// by mu because they are changed from config-change callbacks (HTTP handlers)
+// while downloader workers read them concurrently. Startup-only initialization
+// (ApplyEnvAndDefaults, syncAppStoreToCfg, ensureDownloadDir) runs before any
+// worker starts and does not need the lock.
 type AppConfig struct {
+	mu                  sync.RWMutex
 	GinMode             string `json:"gin_mode"`
 	Host                string `json:"host"`
 	Port                string `json:"port"`
@@ -71,6 +79,8 @@ func (c *AppConfig) ApplyEnvAndDefaults() {
 }
 
 func (c *AppConfig) GetLocalDir() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	return c.LocalDir
 }
 
@@ -80,30 +90,44 @@ func (c *AppConfig) IsDesktop() bool {
 }
 
 func (c *AppConfig) GetDeleteSegments() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	return c.DeleteSegments
 }
 
 func (c *AppConfig) GetProxy() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	return c.Proxy
 }
 
 func (c *AppConfig) GetUseProxy() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	return c.UseProxy
 }
 
 func (c *AppConfig) SetLocalDir(dir string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.LocalDir = dir
 }
 
 func (c *AppConfig) SetDeleteSegments(del bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.DeleteSegments = del
 }
 
 func (c *AppConfig) SetProxy(proxy string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.Proxy = proxy
 }
 
 func (c *AppConfig) SetUseProxy(useProxy bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.UseProxy = useProxy
 }
 

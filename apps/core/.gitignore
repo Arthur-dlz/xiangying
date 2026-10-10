@@ -29,7 +29,6 @@ bin
 .task
 release
 files
-!.bin/**/*
 
 swagger.json
 swagger.yaml

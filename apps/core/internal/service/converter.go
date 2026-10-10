@@ -55,7 +55,7 @@ func (c *Converter) Start(id int64, inputPath, outputFormat, quality string, onP
 	// Generate output path: same dir, new extension
 	dir := filepath.Dir(inputPath)
 	base := strings.TrimSuffix(filepath.Base(inputPath), filepath.Ext(inputPath))
-	formatExtension := strings.TrimLeft(outputFormat, ".")
+	formatExtension := strings.ToLower(strings.TrimSpace(strings.TrimLeft(outputFormat, ".")))
 	if formatExtension == "" || strings.ContainsAny(formatExtension, `/\\`) {
 		return "", fmt.Errorf("invalid output format %q", outputFormat)
 	}
@@ -80,8 +80,10 @@ func (c *Converter) Start(id int64, inputPath, outputFormat, quality string, onP
 	// Get input duration for progress calculation
 	duration := c.probeDuration(inputPath)
 
-	// Build ffmpeg args
-	args := buildFFmpegArgs(inputPath, stagingPath, outputFormat, quality)
+	// Build ffmpeg args from the same normalized format used for the output
+	// extension, so values like "MP4"/".mp4"/"MP4 " cannot silently fall
+	// through to the stream-copy default.
+	args := buildFFmpegArgs(inputPath, stagingPath, formatExtension, quality)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	c.mu.Lock()
@@ -139,7 +141,7 @@ func (c *Converter) Start(id int64, inputPath, outputFormat, quality string, onP
 		if ctx.Err() == context.Canceled {
 			return "", fmt.Errorf("conversion cancelled")
 		}
-		return "", formatFFmpegFailure(outputFormat, waitErr, errorLines)
+		return "", formatFFmpegFailure(formatExtension, waitErr, errorLines)
 	}
 	if scanErr != nil {
 		return "", fmt.Errorf("failed to read ffmpeg output: %w", scanErr)

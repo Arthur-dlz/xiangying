@@ -204,6 +204,11 @@ type TaskInfo struct {
 	StopRequested bool             `json:"stopRequested,omitempty"`
 	Failure       *DownloadFailure `json:"failure,omitempty"`
 	Error         string           `json:"error,omitempty"` // error message (if any)
+
+	// runID identifies the queue execution that owns this entry. It is set by
+	// the task queue and lets a superseded/removed execution avoid mutating a
+	// task that has been re-added under the same ID.
+	runID uint64
 }
 
 // DownloadResult identifies every verified artifact produced by a downloader.

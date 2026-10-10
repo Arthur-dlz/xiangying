@@ -32,10 +32,12 @@ func newDailyRotateWriter(cfg Config) *dailyRotateWriter {
 func (d *dailyRotateWriter) Write(p []byte) (int, error) {
     now := time.Now()
     d.mu.Lock()
+    defer d.mu.Unlock()
+    // Keep the write inside the lock: rotateIfNeededLocked/Close swap and close
+    // d.lj under the same mutex, so releasing it early could let a concurrent
+    // rotation close the logger mid-write (reopening yesterday's file).
     d.rotateIfNeededLocked(now)
-    lj := d.lj
-    d.mu.Unlock()
-    return lj.Write(p)
+    return d.lj.Write(p)
 }
 
 func (d *dailyRotateWriter) Sync() error {

@@ -5,7 +5,9 @@ package conf
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sync"
@@ -56,16 +58,24 @@ func New[T any](opts Options[T]) (*Conf[T], error) {
 	}
 
 	// Try to read existing file
-	if fileData, readErr := os.ReadFile(filePath); readErr == nil {
+	fileData, readErr := os.ReadFile(filePath)
+	switch {
+	case readErr == nil:
 		fileMap := make(map[string]any)
-		if jsonErr := json.Unmarshal(fileData, &fileMap); jsonErr == nil {
-			// Merge defaults under file data (file wins)
-			c.data = mergeMaps(defaultsMap, fileMap)
-			return c, nil
+		if jsonErr := json.Unmarshal(fileData, &fileMap); jsonErr != nil {
+			// Do not clobber a config that exists but cannot be parsed.
+			return nil, fmt.Errorf("conf: parse %s: %w", filePath, jsonErr)
 		}
+		// Merge defaults under file data (file wins)
+		c.data = mergeMaps(defaultsMap, fileMap)
+		return c, nil
+	case !errors.Is(readErr, fs.ErrNotExist):
+		// The file exists but could not be read (e.g. permission denied).
+		// Falling back to defaults here would overwrite the user's config.
+		return nil, fmt.Errorf("conf: read %s: %w", filePath, readErr)
 	}
 
-	// No existing file or invalid JSON — use defaults
+	// No existing file — initialize from defaults
 	c.data = defaultsMap
 
 	// Write initial config
@@ -275,9 +285,17 @@ func (c *Conf[T]) Reload() error {
 		return fmt.Errorf("conf: unmarshal: %w", err)
 	}
 
+	// Mirror New(): merge defaults under the file data so keys that exist only
+	// in opts.Defaults do not silently disappear after a reload.
+	defaultsMap, err := structToMap(c.defaults)
+	if err != nil {
+		return fmt.Errorf("conf: marshal defaults: %w", err)
+	}
+	mergedData := mergeMaps(defaultsMap, fileMap)
+
 	c.mu.Lock()
 	oldData := c.data
-	c.data = fileMap
+	c.data = mergedData
 
 	// Collect listeners with changed values
 	type lc struct {
@@ -288,7 +306,7 @@ func (c *Conf[T]) Reload() error {
 	var calls []lc
 	for _, l := range c.listeners {
 		oldV := dotGet(oldData, l.key)
-		newV := dotGet(fileMap, l.key)
+		newV := dotGet(mergedData, l.key)
 		if !jsonEqual(oldV, newV) {
 			calls = append(calls, lc{fn: l.fn, newVal: newV, oldVal: oldV})
 		}

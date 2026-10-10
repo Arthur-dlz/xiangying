@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	mediagocore "caorushizi.cn/mediago/internal/core"
@@ -97,27 +98,15 @@ func (r *PTYRunner) runWithPTY(ctx context.Context, binPath string, args []strin
 	return finalErr
 }
 
-// buildCommandLine builds a Windows command-line string
-// handling arguments that contain spaces and special characters
+// buildCommandLine builds a Windows command-line string using the Windows
+// CRT / CommandLineToArgvW escaping rules. syscall.EscapeArg correctly handles
+// spaces, embedded quotes, trailing backslashes and empty arguments (the old
+// ad-hoc quoting could drop or split arguments).
 func buildCommandLine(binPath string, args []string) string {
 	parts := make([]string, 0, len(args)+1)
-
-	// add the executable path
-	if strings.Contains(binPath, " ") {
-		parts = append(parts, fmt.Sprintf(`"%s"`, binPath))
-	} else {
-		parts = append(parts, binPath)
-	}
-
-	// add arguments
+	parts = append(parts, syscall.EscapeArg(binPath))
 	for _, arg := range args {
-		if strings.Contains(arg, " ") || strings.Contains(arg, "\t") {
-			// contains spaces or tabs, needs quoting
-			parts = append(parts, fmt.Sprintf(`"%s"`, strings.ReplaceAll(arg, `"`, `\"`)))
-		} else {
-			parts = append(parts, arg)
-		}
+		parts = append(parts, syscall.EscapeArg(arg))
 	}
-
 	return strings.Join(parts, " ")
 }

@@ -79,9 +79,14 @@ func (s *ConversionService) StartConversion(id int64) error {
 		return fmt.Errorf("conversion %d is not in a startable state (status: %s)", id, conv.Status)
 	}
 
-	// Set status to converting
-	if err := s.repo.UpdateStatus(id, "converting", 0, "", nil); err != nil {
+	// Atomically claim the record so two concurrent starts (e.g. a manual start
+	// racing the bulk "convert all" action) cannot both launch ffmpeg.
+	claimed, err := s.repo.TransitionStatus(id, []string{"pending", "failed"}, "converting", 0, "", nil)
+	if err != nil {
 		return err
+	}
+	if !claimed {
+		return fmt.Errorf("conversion %d is not in a startable state (status: %s)", id, conv.Status)
 	}
 
 	s.hub.Broadcast("conversion-start", map[string]any{"id": id})
@@ -95,15 +100,20 @@ func (s *ConversionService) StartConversion(id int64) error {
 
 		if convErr != nil {
 			errMsg := convErr.Error()
-			_ = s.repo.UpdateStatus(id, "failed", 0, "", &errMsg)
-			s.hub.Broadcast("conversion-failed", map[string]any{"id": id, "error": errMsg})
+			// Only fail the record while it is still running; a concurrent stop
+			// has already recorded a terminal state that must not be overwritten.
+			if updated, _ := s.repo.TransitionStatus(id, []string{"converting"}, "failed", 0, "", &errMsg); updated {
+				s.hub.Broadcast("conversion-failed", map[string]any{"id": id, "error": errMsg})
+			}
 			logger.Errorf("Conversion %d failed: %v", id, convErr)
 			return
 		}
 
-		_ = s.repo.UpdateStatus(id, "done", 100, outputPath, nil)
-		s.hub.Broadcast("conversion-success", map[string]any{"id": id, "outputPath": outputPath})
-		logger.Infof("Conversion %d completed: %s", id, outputPath)
+		// Guard the success write so it cannot resurrect a cancelled record.
+		if updated, _ := s.repo.TransitionStatus(id, []string{"converting"}, "done", 100, outputPath, nil); updated {
+			s.hub.Broadcast("conversion-success", map[string]any{"id": id, "outputPath": outputPath})
+			logger.Infof("Conversion %d completed: %s", id, outputPath)
+		}
 	}()
 
 	return nil
@@ -111,11 +121,22 @@ func (s *ConversionService) StartConversion(id int64) error {
 
 // StopConversion cancels a running conversion.
 func (s *ConversionService) StopConversion(id int64) error {
-	s.converter.Stop(id)
-	errMsg := "cancelled by user"
-	if err := s.repo.UpdateStatus(id, "failed", 0, "", &errMsg); err != nil {
+	if _, err := s.repo.FindByIDOrFail(id); err != nil {
 		return err
 	}
+
+	// Claim the terminal state before cancelling the process, so a job that
+	// finishes at the same moment cannot overwrite the cancelled result.
+	errMsg := "cancelled by user"
+	updated, err := s.repo.TransitionStatus(id, []string{"converting"}, "failed", 0, "", &errMsg)
+	if err != nil {
+		return err
+	}
+	if !updated {
+		return fmt.Errorf("conversion %d is not running", id)
+	}
+
+	s.converter.Stop(id)
 	s.hub.Broadcast("conversion-stop", map[string]any{"id": id})
 	return nil
 }

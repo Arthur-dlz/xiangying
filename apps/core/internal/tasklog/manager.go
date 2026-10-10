@@ -2,10 +2,21 @@ package tasklog
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sync"
 )
+
+// errInvalidTaskID reports a task ID that is not safe to use as a file name.
+var errInvalidTaskID = errors.New("invalid task id")
+
+// taskIDPattern mirrors the API-level task ID contract. Task IDs are joined
+// into a file name, so anything that could act as a path separator (slash,
+// backslash) or a parent reference ("..") must be rejected before any
+// filesystem use.
+var taskIDPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$`)
 
 // Manager handles per-task log persistence.
 type Manager struct {
@@ -30,7 +41,11 @@ func (m *Manager) Append(taskID string, line string) error {
 		return err
 	}
 
-	f, err := os.OpenFile(m.logPath(taskID), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	path, err := m.logPath(taskID)
+	if err != nil {
+		return err
+	}
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -54,7 +69,11 @@ func (m *Manager) Reset(taskID string) error {
 		return err
 	}
 
-	if err := os.Remove(m.logPath(taskID)); err != nil && !errors.Is(err, os.ErrNotExist) {
+	path, err := m.logPath(taskID)
+	if err != nil {
+		return err
+	}
+	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
 	return nil
@@ -68,16 +87,24 @@ func (m *Manager) Read(taskID string) (string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	data, err := os.ReadFile(m.logPath(taskID))
+	path, err := m.logPath(taskID)
+	if err != nil {
+		return "", err
+	}
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (m *Manager) logPath(taskID string) string {
-	filename := taskID + ".log"
-	return filepath.Join(m.baseDir, filename)
+// logPath maps a task ID to its log file path. The ID is validated first so a
+// crafted value cannot escape baseDir through path separators or "..".
+func (m *Manager) logPath(taskID string) (string, error) {
+	if !taskIDPattern.MatchString(taskID) {
+		return "", fmt.Errorf("%w: %q", errInvalidTaskID, taskID)
+	}
+	return filepath.Join(m.baseDir, taskID+".log"), nil
 }
 
 func (m *Manager) ensureDir() error {

@@ -84,7 +84,12 @@ func NewLineParser(cr schema.ConsoleReg) (*LineParser, error) {
 	return lp, nil
 }
 
-// Parse parses a line of console output and returns the event type and error message
+// Parse parses a line of console output and returns the event type and error message.
+//
+// Parse is not safe for concurrent use: it performs an unsynchronized
+// read-modify-write on the caller-owned *ParseState. Callers that share a
+// ParseState (e.g. the stdout and stderr readers of a single process) must
+// serialize their calls.
 func (lp *LineParser) Parse(line string, state *ParseState) (event string, errMsg string) {
 	// Error line
 	if lp.errorReg != nil && lp.errorReg.MatchString(line) {

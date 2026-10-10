@@ -70,7 +70,15 @@ func existingDirectoryAncestor(path string) (string, error) {
 			if !info.IsDir() {
 				return "", errors.New("output path ancestor is not a directory")
 			}
-			return current, nil
+			// Resolve symlinks/junctions so the real target's volume — not the
+			// link's host directory — is the one classified. Otherwise a
+			// resolvable link to another volume could pass the NTFS check while
+			// the actual write target is non-NTFS.
+			resolved, linkErr := filepath.EvalSymlinks(current)
+			if linkErr != nil {
+				return "", linkErr
+			}
+			return resolved, nil
 		}
 		if !errors.Is(statErr, os.ErrNotExist) {
 			return "", statErr

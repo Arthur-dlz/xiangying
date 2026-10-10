@@ -90,16 +90,51 @@ func (r *ConversionRepository) FindWithPagination(current, pageSize int) (*Conve
 }
 
 // UpdateStatus updates the status, progress, outputPath, and error fields.
+// outputPath is only written when a non-empty value is supplied so a
+// progress-only update cannot clear a previously persisted output path, and a
+// nil errMsg clears any stale failure text instead of leaving it behind.
 func (r *ConversionRepository) UpdateStatus(id int64, status string, progress int, outputPath string, errMsg *string) error {
 	updates := map[string]any{
-		"status":     status,
-		"progress":   progress,
-		"outputPath": outputPath,
+		"status":   status,
+		"progress": progress,
+	}
+	if outputPath != "" {
+		updates["outputPath"] = outputPath
 	}
 	if errMsg != nil {
 		updates["error"] = *errMsg
+	} else {
+		updates["error"] = ""
 	}
 	return r.writeDB().Model(&db.Conversion{}).Where("id = ?", id).Updates(updates).Error
+}
+
+// TransitionStatus applies a status change only when the record is currently in
+// one of the from statuses. This makes start/stop/finish transitions atomic so
+// concurrent operations cannot both win, and reports whether a row was updated.
+func (r *ConversionRepository) TransitionStatus(id int64, from []string, status string, progress int, outputPath string, errMsg *string) (bool, error) {
+	if len(from) == 0 {
+		return false, errors.New("conversion transition requires at least one source status")
+	}
+	updates := map[string]any{
+		"status":   status,
+		"progress": progress,
+	}
+	if outputPath != "" {
+		updates["outputPath"] = outputPath
+	}
+	if errMsg != nil {
+		updates["error"] = *errMsg
+	} else {
+		updates["error"] = ""
+	}
+	result := r.writeDB().Model(&db.Conversion{}).
+		Where("id = ? AND status IN ?", id, from).
+		Updates(updates)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	return result.RowsAffected == 1, nil
 }
 
 // Delete removes a conversion record.

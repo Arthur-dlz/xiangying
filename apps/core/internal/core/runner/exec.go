@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -57,13 +58,19 @@ func (r *ExecRunner) RunWithOptions(ctx context.Context, binPath string, args []
 		return err
 	}
 
-	// read pipe lines and normalize to UTF-8
+	// read pipe lines and normalize to UTF-8.
+	// stdout and stderr are read by two separate goroutines; serialize the
+	// callback so onStdLine is never invoked concurrently (its state, e.g. the
+	// shared parser.ParseState in the downloader, is not concurrency-safe).
+	var callbackMu sync.Mutex
 	readPipe := func(scanner *bufio.Scanner) {
 		for scanner.Scan() {
 			b := scanner.Bytes()
 			line := decodeToUTF8(b)
 			if onStdLine != nil {
+				callbackMu.Lock()
 				onStdLine(line)
+				callbackMu.Unlock()
 			}
 		}
 	}

@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -284,6 +285,134 @@ func TestTaskQueueSetMaxRunnerFillsEveryAvailableSlot(t *testing.T) {
 	}
 }
 
+// A task re-added after Remove must not have the stale execution's result
+// persisted over the fresh task's record (runID ownership gate).
+func TestTaskQueueReAddedTaskNotCorruptedByStaleCompletion(t *testing.T) {
+	releaseStale := make(chan struct{})
+	started := make(chan int32, 4)
+	var calls int32
+	completions := make(chan string, 4)
+	queue := NewTaskQueue(downloaderFunc(func(_ context.Context, _ DownloadParams, _ Callbacks) (DownloadResult, error) {
+		if atomic.AddInt32(&calls, 1) == 1 {
+			started <- 1
+			<-releaseStale // stale run ignores cancellation, simulating slow cleanup
+			return DownloadResult{PrimaryPath: "/downloads/stale.mp4"}, nil
+		}
+		return DownloadResult{PrimaryPath: "/downloads/fresh.mp4"}, nil
+	}), 2)
+	queue.OnComplete(func(_ TaskID, result DownloadResult) error {
+		completions <- result.PrimaryPath
+		return nil
+	})
+	params := DownloadParams{ID: "1", Type: TypeM3U8}
+
+	queue.Enqueue(params)
+	waitForCallNumber(t, started, 1)
+	queue.Remove("1")
+
+	if status := queue.Enqueue(params); status != StatusPending {
+		t.Fatalf("re-add Enqueue() = %s, want %s", status, StatusPending)
+	}
+
+	close(releaseStale)
+	select {
+	case path := <-completions:
+		if path != "/downloads/fresh.mp4" {
+			t.Fatalf("persisted result = %q, want %q", path, "/downloads/fresh.mp4")
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for re-added task completion")
+	}
+	select {
+	case path := <-completions:
+		t.Fatalf("unexpected extra completion persisted: %q", path)
+	default:
+	}
+}
+
+// A re-added task must wait for the removed execution to return before its own
+// download starts, even when a runner slot is free.
+func TestTaskQueueReAddedTaskWaitsForStaleExecution(t *testing.T) {
+	releaseStale := make(chan struct{})
+	started := make(chan int32, 4)
+	var calls int32
+	queue := NewTaskQueue(downloaderFunc(func(_ context.Context, _ DownloadParams, _ Callbacks) (DownloadResult, error) {
+		if atomic.AddInt32(&calls, 1) == 1 {
+			started <- 1
+			<-releaseStale
+			return DownloadResult{}, context.Canceled
+		}
+		started <- 2
+		return DownloadResult{PrimaryPath: "/downloads/fresh.mp4"}, nil
+	}), 2)
+	params := DownloadParams{ID: "1", Type: TypeM3U8}
+
+	queue.Enqueue(params)
+	waitForCallNumber(t, started, 1)
+	queue.Remove("1")
+
+	if status := queue.Enqueue(params); status != StatusPending {
+		t.Fatalf("re-add Enqueue() = %s, want %s", status, StatusPending)
+	}
+	time.Sleep(20 * time.Millisecond)
+	if got := atomic.LoadInt32(&calls); got != 1 {
+		t.Fatalf("Download() call count after re-add = %d, want 1 (no double start)", got)
+	}
+
+	close(releaseStale)
+	waitForCallNumber(t, started, 2)
+	if got := atomic.LoadInt32(&calls); got != 2 {
+		t.Fatalf("Download() call count = %d, want 2", got)
+	}
+	deadline := time.Now().Add(time.Second)
+	for {
+		if task, ok := queue.GetTask("1"); ok && task.Status == StatusSuccess {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("re-added task did not succeed")
+		}
+		time.Sleep(time.Millisecond)
+	}
+}
+
+// Removing a task whose re-added copy is still queued must not swallow a
+// subsequent re-add: the stale queue entry is dropped with the task.
+func TestTaskQueueRemoveAfterReAddDoesNotLoseTask(t *testing.T) {
+	releaseStale := make(chan struct{})
+	started := make(chan int32, 4)
+	var calls int32
+	queue := NewTaskQueue(downloaderFunc(func(_ context.Context, _ DownloadParams, _ Callbacks) (DownloadResult, error) {
+		if atomic.AddInt32(&calls, 1) == 1 {
+			started <- 1
+			<-releaseStale
+			return DownloadResult{}, context.Canceled
+		}
+		started <- 2
+		return DownloadResult{PrimaryPath: "/downloads/fresh.mp4"}, nil
+	}), 1)
+	params := DownloadParams{ID: "1", Type: TypeM3U8}
+
+	queue.Enqueue(params)
+	waitForCallNumber(t, started, 1)
+	queue.Remove("1")
+	if status := queue.Enqueue(params); status != StatusPending {
+		t.Fatalf("re-add Enqueue() = %s, want %s", status, StatusPending)
+	}
+
+	// Delete the persisted task again while the stale execution winds down.
+	queue.Remove("1")
+	if status := queue.Enqueue(params); status != StatusPending {
+		t.Fatalf("second re-add Enqueue() = %s, want %s", status, StatusPending)
+	}
+
+	close(releaseStale)
+	waitForCallNumber(t, started, 2)
+	if got := atomic.LoadInt32(&calls); got != 2 {
+		t.Fatalf("Download() call count = %d, want 2 (task must not be lost)", got)
+	}
+}
+
 func waitForStarted(t *testing.T, ch <-chan TaskID, want TaskID) {
 	t.Helper()
 	select {
@@ -293,6 +422,18 @@ func waitForStarted(t *testing.T, ch <-chan TaskID, want TaskID) {
 		}
 	case <-time.After(time.Second):
 		t.Fatalf("timed out waiting for task %s", want)
+	}
+}
+
+func waitForCallNumber(t *testing.T, ch <-chan int32, want int32) {
+	t.Helper()
+	select {
+	case got := <-ch:
+		if got != want {
+			t.Fatalf("download call = %d, want %d", got, want)
+		}
+	case <-time.After(time.Second):
+		t.Fatalf("timed out waiting for download call %d", want)
 	}
 }
 

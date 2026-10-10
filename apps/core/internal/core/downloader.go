@@ -760,9 +760,17 @@ func (d *DownloaderSvc) Download(ctx context.Context, p DownloadParams, cb Callb
 	var reportedOutput string
 	var sawXiaohongshuNoVideoFormats bool
 	var reportedOutputMu sync.Mutex
+	// onLine runs concurrently on the stdout and stderr reader goroutines
+	// (runner.ExecRunner), so the shared parse state and the observer callbacks
+	// it touches must be serialized. ProgressTracker is internally locked; the
+	// parser state and the callbacks are not.
+	var onLineMu sync.Mutex
 
 	// process console output line by line
 	onLine := func(line string) {
+		onLineMu.Lock()
+		defer onLineMu.Unlock()
+
 		if output := outputPathFromLine(line); output != "" {
 			reportedOutputMu.Lock()
 			reportedOutput = output
