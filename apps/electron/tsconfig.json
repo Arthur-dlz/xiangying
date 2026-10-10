@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.node.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "declaration": true,
+    "declarationDir": "./types",
+    "outDir": "app/output/build/main",
+    "rootDir": "../.."
+  },
+  "include": ["src", "tsdown.config.ts"],
+  "references": []
+}

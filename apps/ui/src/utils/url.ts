@@ -1,0 +1,46 @@
+const protocolAndDomainRE = /^(?:\w+:)?\/\/(\S+)$/;
+
+const localhostDomainRE = /^localhost[:?\d]*(?:[^:?\d]\S*)?$/;
+const nonLocalhostDomainRE = /^[^\s.]+\.\S{2,}$/;
+
+/**
+ * Loosely validate a URL `string`.
+ *
+ * @param {String} string
+ * @return {Boolean}
+ */
+
+export function isUrl(string: string) {
+  if (typeof string !== "string") {
+    return false;
+  }
+
+  const match = string.match(protocolAndDomainRE);
+  if (!match) {
+    return false;
+  }
+
+  const everythingAfterProtocol = match[1];
+  if (!everythingAfterProtocol) {
+    return false;
+  }
+
+  if (
+    localhostDomainRE.test(everythingAfterProtocol) ||
+    nonLocalhostDomainRE.test(everythingAfterProtocol)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Determine whether a URL has been encoded
+ * @param url URL string to check
+ * @returns boolean Returns true if the URL is encoded, false otherwise
+ */
+export function isEncodedURL(url: string): boolean {
+  // If the decoded URL differs from the original, the URL was encoded
+  return decodeURIComponent(url) !== url;
+}

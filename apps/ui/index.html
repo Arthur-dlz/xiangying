@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="manifest" href="/manifest.json" />
+    <link
+      rel="preload"
+      as="image"
+      href="/startup-illustration.png"
+      fetchpriority="high"
+    />
+    <title>乡映</title>
+    <script>
+      (() => {
+        const root = document.documentElement;
+        let preferredTheme = "system";
+        let preferredLanguage = "zh";
+
+        try {
+          const persisted = JSON.parse(
+            localStorage.getItem("appstore-storage") || "null",
+          )?.state;
+          preferredTheme = persisted?.theme || preferredTheme;
+          preferredLanguage = persisted?.language || preferredLanguage;
+        } catch {
+          // Fall back to the operating-system preferences.
+        }
+
+        const systemDark = window.matchMedia?.(
+          "(prefers-color-scheme: dark)",
+        ).matches;
+        const dark =
+          preferredTheme === "dark" ||
+          (preferredTheme === "system" && systemDark);
+        root.classList.toggle("dark", dark);
+        root.style.colorScheme = dark ? "dark" : "light";
+
+        const systemLanguage = (
+          navigator.languages?.[0] || navigator.language
+        ).toLowerCase();
+        const language =
+          preferredLanguage === "system"
+            ? systemLanguage.startsWith("zh")
+              ? "zh"
+              : systemLanguage.startsWith("it")
+                ? "it"
+                : "en"
+            : preferredLanguage;
+        root.lang = language;
+        root.dataset.bootLanguage = language;
+      })();
+    </script>
+    <style>
+      :root {
+        --boot-canvas: #ffffff;
+        --boot-foreground: #17202b;
+        --boot-muted: #5f6f85;
+        --boot-track: #edf2f7;
+        --boot-brand: #0d9488;
+      }
+
+      html.dark {
+        --boot-canvas: #1f1f1f;
+        --boot-foreground: #f3f6f9;
+        --boot-muted: #9aa6b5;
+        --boot-track: #303844;
+        --boot-brand: #2dd4bf;
+      }
+
+      html,
+      body,
+      #root {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+      }
+
+      body {
+        background: var(--boot-canvas);
+        color: var(--boot-foreground);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      .app-boot-screen {
+        display: flex;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        background: var(--boot-canvas);
+        cursor: wait;
+        color: var(--boot-foreground);
+        text-align: center;
+        user-select: none;
+      }
+
+      .app-boot-illustration {
+        display: block;
+        width: clamp(17rem, 28vw, 21rem);
+        max-width: 76vw;
+        height: auto;
+        object-fit: contain;
+      }
+
+      .app-boot-wordmark {
+        display: flex;
+        align-items: baseline;
+        margin-top: -0.75rem;
+        font-size: 1.25rem;
+        line-height: 1.5rem;
+        letter-spacing: -0.01em;
+      }
+
+      .app-boot-wordmark strong {
+        font-weight: 700;
+      }
+
+      .app-boot-wordmark span {
+        color: var(--boot-muted);
+        font-weight: 400;
+      }
+
+      .app-boot-status {
+        min-height: 1.25rem;
+        margin: 0.5rem 0 0;
+        color: var(--boot-muted);
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+      }
+
+      .app-boot-copy {
+        display: none;
+      }
+
+      html[data-boot-language="zh"] .app-boot-copy-zh,
+      html[data-boot-language="it"] .app-boot-copy-it,
+      html[data-boot-language="en"] .app-boot-copy-en {
+        display: inline;
+      }
+
+      .app-boot-progress {
+        width: 7.5rem;
+        height: 0.1875rem;
+        margin-top: 0.875rem;
+        overflow: hidden;
+        border-radius: 999px;
+        background: var(--boot-track);
+      }
+
+      .app-boot-progress-indicator {
+        display: block;
+        width: 42%;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--boot-brand);
+        animation: app-boot-progress 1.25s ease-in-out infinite;
+        transform: translateX(-110%);
+      }
+
+      @keyframes app-boot-progress {
+        to {
+          transform: translateX(340%);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .app-boot-progress-indicator {
+          width: 100%;
+          animation: none;
+          opacity: 0.72;
+          transform: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div
+        class="app-boot-screen"
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+      >
+        <img
+          class="app-boot-illustration"
+          src="/startup-illustration.png"
+          width="768"
+          height="768"
+          alt=""
+          decoding="async"
+          fetchpriority="high"
+          draggable="false"
+        />
+        <div class="app-boot-wordmark" aria-hidden="true">
+          <strong>MEDIA</strong><span>GO</span>
+        </div>
+        <p class="app-boot-status">
+          <span class="app-boot-copy app-boot-copy-zh">正在启动 MediaGo…</span>
+          <span class="app-boot-copy app-boot-copy-en">Starting MediaGo…</span>
+          <span class="app-boot-copy app-boot-copy-it">Avvio di MediaGo…</span>
+        </p>
+        <div class="app-boot-progress" aria-hidden="true">
+          <span class="app-boot-progress-indicator"></span>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+# Shell scripts MUST keep LF endings — CRLF from Windows checkouts breaks
+# /bin/sh inside Linux containers (`/bin/sh^M: bad interpreter`).
+*.sh text eol=lf
+# Source contracts and media fixture hashes require identical bytes on Windows/CI.
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.m3u8 text eol=lf

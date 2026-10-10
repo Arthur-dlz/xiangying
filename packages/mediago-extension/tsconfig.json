@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.app.json",
+  "compilerOptions": {
+    "lib": ["DOM", "DOM.Iterable", "ES2022", "WebWorker"],
+    "types": ["chrome", "vite/client"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "paths": {
+      "@mediago/browser-extension/site-adapter-matches": [
+        "../browser-extension/src/site-adapters/adapter-matches.ts"
+      ],
+      "@mediago/browser-extension/site-adapters": [
+        "../browser-extension/src/site-adapters/index.ts"
+      ],
+      "@/*": ["./src/*"]
+    },
+    "skipLibCheck": true
+  },
+  "include": ["src", "manifest.config.ts", "vite.config.ts"]
+}

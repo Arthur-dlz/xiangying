@@ -1,0 +1,14 @@
+{
+  "name": "mediago-community",
+  "version": "0.1.0-alpha.3",
+  "description": "乡映：中文视频嗅探、下载与本地片库；基于 MediaGo",
+  "main": "main/index.js",
+  "type": "module",
+  "author": "caorushizi",
+  "homepage": "https://downloader.caorushizi.cn/",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "43.2.0"
+  }
+}

@@ -1,0 +1,25 @@
+import { provide } from "@inversifyjs/binding-decorators";
+import type { Controller } from "@mediago/common";
+import { registerControllerHandlers } from "./registerControllerHandlers";
+import { TYPES } from "../types/symbols";
+import { ipcMain } from "electron";
+import { inject, injectable, multiInject } from "inversify";
+import type { MediaGoRouter } from "../types/core";
+import ElectronLogger from "../vendor/ElectronLogger";
+import { createElectronControllerBinder } from "./electronBinder";
+
+@injectable()
+@provide()
+export default class ElectronRouter implements MediaGoRouter {
+  constructor(
+    @multiInject(TYPES.Controller)
+    private readonly controllers: Controller[],
+    @inject(ElectronLogger)
+    private readonly logger: ElectronLogger,
+  ) {}
+
+  init(): void {
+    const binder = createElectronControllerBinder(ipcMain, this.logger);
+    registerControllerHandlers(this.controllers, binder);
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@mediago/tooling",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./electron/macos-development-runtime": "./src/electron/macos-development-runtime.ts",
+    "./electron-artifacts": "./src/electron-artifacts/index.ts",
+    "./env": "./src/env/index.ts",
+    "./process": "./src/process/index.ts",
+    "./release": "./src/release/index.ts",
+    "./runtime-deps": "./src/runtime-deps/index.ts",
+    "./vite": "./src/vite/index.ts"
+  },
+  "scripts": {
+    "type:check": "tsc --noEmit",
+    "test": "pnpm --dir ../.. exec vitest run packages/tooling"
+  },
+  "dependencies": {
+    "@electron/osx-sign": "2.7.0",
+    "dotenv-flow": "4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.3.0",
+    "electron-builder": "26.15.3",
+    "sharp": "0.35.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
+  }
+}

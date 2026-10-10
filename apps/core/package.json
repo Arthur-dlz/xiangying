@@ -1,0 +1,25 @@
+{
+  "name": "@mediago/core-build",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MediaGo Core - Go download backend build scripts",
+  "scripts": {
+    "dev": "tsx ../../packages/tooling/src/core-build/cli.ts dev",
+    "build": "tsx ../../packages/tooling/src/core-build/cli.ts build",
+    "build:production": "tsx ../../packages/tooling/src/core-build/cli.ts build:production",
+    "release:build": "tsx ../../packages/tooling/src/core-build/cli.ts release:build",
+    "release": "tsx ../../packages/tooling/src/core-build/cli.ts release"
+  },
+  "keywords": [
+    "video",
+    "download",
+    "m3u8",
+    "bilibili",
+    "mediago"
+  ],
+  "author": "caorushizi",
+  "license": "MIT",
+  "devDependencies": {
+    "tsx": "^4.23.12"
+  }
+}

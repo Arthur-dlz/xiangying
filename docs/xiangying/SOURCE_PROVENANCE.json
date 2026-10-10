@@ -1,0 +1,18 @@
+{
+  "project": "xiangying",
+  "displayName": "乡映",
+  "upstream": "https://github.com/mediago-dev/mediago",
+  "upstreamBaseline": "c3c943b2df7c6e81fe546d2857efc10ccbbaae46",
+  "version": "0.1.0-alpha.3",
+  "preparedDate": "2026-10-10",
+  "export": "Current working-tree files; no original Git history",
+  "frozenProductSourceCount": 622,
+  "allFrozenProductSourcesCopied": true,
+  "program": {
+    "exe": "2ad5e2599471100b3f46482fb1997dc85352bfa9f2a879fed5766b6970352e45",
+    "asar": "e2aaeda679a42337a0b9b893754a9e885df62589daa3e2d1b7674963e572c244",
+    "core": "a25126368fb41066edea64fdca21bbfc4cc42190c82f63bf643c2d655470c9cb"
+  },
+  "dependencyLockUnchanged": true,
+  "repository": "https://github.com/Arthur-dlz/xiangying"
+}

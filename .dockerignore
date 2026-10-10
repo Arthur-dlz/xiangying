@@ -1,0 +1,23 @@
+**/node_modules
+**/build
+**/dist
+**/release
+**/.turbo
+**/.git
+**/.claude
+**/.deps
+*.md
+!THIRD_PARTY_NOTICES.md
+
+# Go build artifacts
+apps/core/bin/
+apps/core/server
+
+# Electron source (not needed, but keep package.json files for workspace/build)
+apps/electron/src/
+apps/electron/scripts/
+docs/
+
+# OS files
+.DS_Store
+**/.DS_Store

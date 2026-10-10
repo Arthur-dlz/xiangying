@@ -1,0 +1,61 @@
+import { BrowserWindow, type BrowserWindowConstructorOptions } from "electron";
+import isDev from "electron-is-dev";
+import { resolveWindowIcon } from "./desktop-icons";
+import {
+  registerTrustedAppContents,
+  unregisterTrustedAppContents,
+} from "./trust-policy";
+
+export default class Window {
+  window: BrowserWindow | null = null;
+  options: BrowserWindowConstructorOptions;
+  url: string;
+
+  constructor(options: BrowserWindowConstructorOptions) {
+    const icon = resolveWindowIcon(__dirname);
+    this.options =
+      icon && options.icon === undefined ? { ...options, icon } : options;
+  }
+
+  create() {
+    if (!this.url) {
+      throw new Error("url is required");
+    }
+
+    const window = new BrowserWindow(this.options);
+    const webContentsId = window.webContents.id;
+    registerTrustedAppContents(webContentsId);
+    window.webContents.once("destroyed", () => {
+      unregisterTrustedAppContents(webContentsId);
+    });
+    void window.loadURL(this.url);
+
+    window.once("ready-to-show", this.readyToShow);
+    window.on("close", this.windowClose);
+
+    return window;
+  }
+
+  readyToShow = () => {
+    if (!this.window) return;
+
+    this.window.show();
+
+    if (isDev && process.env.OPEN_DEVTOOLS === "true") {
+      this.window.webContents.openDevTools();
+    }
+  };
+
+  windowClose = () => {
+    if (!this.window) return;
+
+    // Destruction window
+    this.window = null;
+  };
+
+  send(channel: string, ...args: unknown[]) {
+    if (!this.window) return;
+
+    this.window.webContents.send(channel, ...args);
+  }
+}

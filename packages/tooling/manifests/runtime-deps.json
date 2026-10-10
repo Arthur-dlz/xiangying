@@ -1,0 +1,180 @@
+{
+  "ffmpeg": {
+    "repo": "eugeneware/ffmpeg-static",
+    "version": "b6.0",
+    "assets": {
+      "darwin-x64": "ffmpeg-darwin-x64.gz",
+      "darwin-arm64": "ffmpeg-darwin-arm64.gz",
+      "linux-x64": "ffmpeg-linux-x64.gz",
+      "linux-arm64": "ffmpeg-linux-arm64.gz",
+      "win32-x64": "ffmpeg-win32-x64.gz"
+    },
+    "sha256": {
+      "darwin-x64": "cfe20936c83ecf5d68e424b87e8cc45b24dd6be81787810123bb964a0df686f9",
+      "darwin-arm64": "a90e3db6a3fd35f6074b013f948b1aa45b31c6375489d39e572bea3f18336584",
+      "linux-x64": "ed652b2f32e0851d1946894fb8333f5b677c1b2ce6b9d187910a67f8b99da028",
+      "linux-arm64": "237800b37bb65a81ad47871c6c8b7c45c0a3ca62a5b3f9d2a7a9a2dd9a338271",
+      "win32-x64": "e9fd5e711debab9d680955fc1e38a2c1160fd280b144476cc3f62bc43ef49db1"
+    },
+    "binaryName": {
+      "default": "ffmpeg",
+      "win32": "ffmpeg.exe"
+    }
+  },
+  "N_m3u8DL-RE": {
+    "repo": "nilaoda/N_m3u8DL-RE",
+    "version": "v0.6.0-beta",
+    "assets": {
+      "darwin-x64": "N_m3u8DL-RE_v0.6.0-beta_osx-x64_20260629.tar.gz",
+      "darwin-arm64": "N_m3u8DL-RE_v0.6.0-beta_osx-arm64_20260629.tar.gz",
+      "linux-x64": "N_m3u8DL-RE_v0.6.0-beta_linux-x64_20260629.tar.gz",
+      "linux-arm64": "N_m3u8DL-RE_v0.6.0-beta_linux-arm64_20260629.tar.gz",
+      "win32-x64": "N_m3u8DL-RE_v0.6.0-beta_win-x64_20260629.zip",
+      "win32-arm64": "N_m3u8DL-RE_v0.6.0-beta_win-arm64_20260629.zip"
+    },
+    "sha256": {
+      "darwin-x64": "8d4ce04c28f0fa9e2aea9c53af2a5895882f353e12425c5c3fcafaa4370a216a",
+      "darwin-arm64": "c332b463aa42975c25217d56a51a2ea32fddfd86b4ae8338a8f7416b0bc196e7",
+      "linux-x64": "87e5bf963d9c1a72aee8eb5a75edbe398de2b00ec209b595f621ac6a9c344186",
+      "linux-arm64": "c3f0bef7860dadb0ccbcbc6d206d19af0a0c8e74780f937b213784e5e7aa32dd",
+      "win32-x64": "35e7c16983f0315bba2a3f37dc392fdfa074be614c8effb642b78376b18ba272",
+      "win32-arm64": "d474901071804a21703c469a7a5032be6067a147f3ba219ff252d65cb21f5882"
+    },
+    "binaryName": {
+      "default": "N_m3u8DL-RE",
+      "win32": "N_m3u8DL-RE.exe"
+    },
+    "extractBinary": {
+      "default": "N_m3u8DL-RE",
+      "win32": "N_m3u8DL-RE.exe"
+    }
+  },
+  "BBDown": {
+    "repo": "nilaoda/BBDown",
+    "version": "1.6.3",
+    "assets": {
+      "darwin-x64": "BBDown_1.6.3_20240814_osx-x64.zip",
+      "darwin-arm64": "BBDown_1.6.3_20240814_osx-arm64.zip",
+      "linux-x64": "BBDown_1.6.3_20240814_linux-x64.zip",
+      "linux-arm64": "BBDown_1.6.3_20240814_linux-arm64.zip",
+      "win32-x64": "BBDown_1.6.3_20240814_win-x64.zip",
+      "win32-arm64": "BBDown_1.6.3_20240814_win-arm64.zip"
+    },
+    "sha256": {
+      "darwin-x64": "0d18889968dc3ee6089791b7d6cf4155cdbc98d8595da2251ff3835f91e7c105",
+      "darwin-arm64": "33597b2b7b83eecb4fbb4f0a50a43f1ada3ac1d9b6adf4eadda8399c700ea470",
+      "linux-x64": "bbe73ae5b72bdd30da9bcc330ffa441a504d13674caec0de6f1f909ae0c5c867",
+      "linux-arm64": "b0456d08f1d3365fcd25793f231c998a9db15ffac87ac169a799a48f0c9fb9cf",
+      "win32-x64": "eb8b985af07c4757fa695204283208aee879bf79f6462a1d161e3a55b5a19cb1",
+      "win32-arm64": "538cc8affff98ae4342c7ab5d00a65bcedc816985df546687defff4ee71c0d26"
+    },
+    "binaryName": {
+      "default": "BBDown",
+      "win32": "BBDown.exe"
+    },
+    "extractBinary": {
+      "default": "BBDown",
+      "win32": "BBDown.exe"
+    }
+  },
+  "aria2": {
+    "repo": "AnInsomniacy/aria2-next",
+    "version": "v2.5.5",
+    "assets": {
+      "darwin-x64": "aria2-next-2.5.5-macos-x86_64",
+      "darwin-arm64": "aria2-next-2.5.5-macos-arm64",
+      "linux-x64": "aria2-next-2.5.5-linux-x86_64",
+      "linux-arm64": "aria2-next-2.5.5-linux-aarch64",
+      "win32-x64": "aria2-next-2.5.5-windows-x86_64.exe",
+      "win32-arm64": "aria2-next-2.5.5-windows-arm64.exe"
+    },
+    "sha256": {
+      "darwin-x64": "49a39dd624d45f693a41ecca0e6359ec0bd91df9efa16cf994f2f200aa45d415",
+      "darwin-arm64": "1417eec59edba6ac436b5f3b1bbcc2add01696d62333e8de8c3900677bd45926",
+      "linux-x64": "b6f2cdadcd34ba16dd7fcb29de4b84c36f893f9b223a9a05157d1892687a45a0",
+      "linux-arm64": "fd4b07aeb50fb02a9d19dd55e3ff5cea99e5a6263db1cc6a554c216dc49fa987",
+      "win32-x64": "554f2f81ca53731dc9e01710cfb16081a34759f3276ff16eb4b12656c1b6e5b9",
+      "win32-arm64": "fe029b00c72014690f128c17830f51924b6c07bafee28e28763d1fed93cb393e"
+    },
+    "binaryName": {
+      "default": "aria2c",
+      "win32": "aria2c.exe"
+    }
+  },
+  "yt-dlp": {
+    "repo": "yt-dlp/yt-dlp",
+    "version": "2026.08.19",
+    "assets": {
+      "darwin-x64": "yt-dlp_macos",
+      "darwin-arm64": "yt-dlp_macos",
+      "linux-x64": "yt-dlp_linux",
+      "linux-arm64": "yt-dlp_linux_aarch64",
+      "win32-x64": "yt-dlp.exe",
+      "win32-arm64": "yt-dlp_arm64.exe"
+    },
+    "sha256": {
+      "darwin-x64": "0f192b7ec147ab6288885d6351d9ab67367640029b4377576ef46dd79cf7b202",
+      "darwin-arm64": "0f192b7ec147ab6288885d6351d9ab67367640029b4377576ef46dd79cf7b202",
+      "linux-x64": "58162f9bfdc27458ea47bfcb311cf47028f17d8154a8bf7d689861d46399230a",
+      "linux-arm64": "b16e4dab368a816cd05d477d698a605a6ae87ccee1c8ffd38fa21d7254141fcc",
+      "win32-x64": "66674953fe251b89f4d08c5f0e35e0728679bd67ab3d7d05c0562af101dd3e7a",
+      "win32-arm64": "05b438997bafc3affdfda9d041353c9d73e04dc842207254b655b0887c4445b0"
+    },
+    "binaryName": {
+      "default": "yt-dlp",
+      "win32": "yt-dlp.exe"
+    }
+  },
+  "deno": {
+    "repo": "denoland/deno",
+    "version": "v2.9.5",
+    "assets": {
+      "darwin-x64": "deno-x86_64-apple-darwin.zip",
+      "darwin-arm64": "deno-aarch64-apple-darwin.zip",
+      "linux-x64": "deno-x86_64-unknown-linux-gnu.zip",
+      "linux-arm64": "deno-aarch64-unknown-linux-gnu.zip",
+      "win32-x64": "deno-x86_64-pc-windows-msvc.zip",
+      "win32-arm64": "deno-aarch64-pc-windows-msvc.zip"
+    },
+    "sha256": {
+      "darwin-x64": "befc4fee79127584c0f5c9f76ca6bb73c8e6ff523c01acd52e9c5db1968a09cb",
+      "darwin-arm64": "b5bd08edab254d42d7b05aa5b6cb4c9b8d4dede4975aff76951ce2cce18866fa",
+      "linux-x64": "dc480c462c8c3582524f3e75c160613d0a975e1f66b5465995d58bae236da7d3",
+      "linux-arm64": "e1a70c5eb03b0ebaf761077029ef86b9ba22d50e2b54ca45ce5437457f701b63",
+      "win32-x64": "98f8c2a2d470e4ccb04c935c86ff8050817d877762aec5eaeeb9e409ccb3b9fd",
+      "win32-arm64": "ec503fba3b205fd47777d0e90e84ac7ae74d45d94041b46d31b414894c52ad3b"
+    },
+    "binaryName": {
+      "default": "deno",
+      "win32": "deno.exe"
+    }
+  },
+  "mediago": {
+    "repo": "caorushizi/mediago-core",
+    "version": "v0.2.1",
+    "assets": {
+      "darwin-x64": "mediago-v0.2.1-darwin-amd64.tar.gz",
+      "darwin-arm64": "mediago-v0.2.1-darwin-arm64.tar.gz",
+      "linux-x64": "mediago-v0.2.1-linux-amd64.tar.gz",
+      "linux-arm64": "mediago-v0.2.1-linux-arm64.tar.gz",
+      "win32-x64": "mediago-v0.2.1-windows-amd64.zip",
+      "win32-arm64": "mediago-v0.2.1-windows-arm64.zip"
+    },
+    "sha256": {
+      "darwin-x64": "be8632ac1e34b1a07c81f6384e470ee4a9402074e318c344c36dadd8851f2469",
+      "darwin-arm64": "34586defae19bfaf8e68b7db62234a9a90fabf8c87ef7375712e7402c3cd82f0",
+      "linux-x64": "468ab57d20e803f3c18a69d17da709dbb9bc3d44f56a60bb1a83283e24625f99",
+      "linux-arm64": "e9f711bdd3b4de0c715d2eb7540c237ea4b8d479a9d0ba46a9a96dd41f243fce",
+      "win32-x64": "313ae58fb0acba98019333a00337925bf0c6cd10ddc00d19fee33ce8c9d15fdd",
+      "win32-arm64": "205fc87ad884e012851dbc7a1584683341026ec016100fe71e99dedf1b6b399f"
+    },
+    "binaryName": {
+      "default": "mediago",
+      "win32": "mediago.exe"
+    },
+    "extractBinary": {
+      "default": "mediago",
+      "win32": "mediago.exe"
+    }
+  }
+}

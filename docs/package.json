@@ -1,0 +1,26 @@
+{
+  "name": "@mediago/docs",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "docs:dev": "vitepress dev",
+    "docs:build": "vitepress build",
+    "docs:preview": "vitepress preview"
+  },
+  "keywords": [],
+  "author": "caorushizi",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^26.3.0",
+    "vitepress": "2.0.0-alpha.19"
+  },
+  "dependencies": {
+    "@giscus/vue": "^3.1.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "gray-matter": "^4.0.3",
+    "node-fetch": "^3.3.2",
+    "tailwindcss": "^4.3.3",
+    "vue": "^3.5.41"
+  }
+}

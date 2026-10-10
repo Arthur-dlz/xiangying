@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 5,
+  "enabled": true,
+  "campaignId": "drama-2026-08",
+  "cacheSeconds": 900,
+  "platforms": ["electron", "web"],
+  "actionUrl": "https://mediago.torchstellar.com/?utm_source=mediago&utm_medium=in_app_promo&utm_campaign=drama_launch_2026_08",
+  "content": {
+    "zh": {
+      "title": "一站式 AI 漫剧创作工作台",
+      "buttonText": "立即体验",
+      "imageUrl": "https://raw.githubusercontent.com/mediago-dev/mediago/master/remote-config/assets/settings-promo-drama.webp",
+      "sidebarImageUrl": "https://raw.githubusercontent.com/mediago-dev/mediago/master/remote-config/assets/settings-promo-drama-sidebar.webp"
+    },
+    "en": {
+      "title": "All-in-one AI comic-drama workspace",
+      "buttonText": "Try Drama",
+      "imageUrl": "https://raw.githubusercontent.com/mediago-dev/mediago/master/remote-config/assets/settings-promo-drama.webp",
+      "sidebarImageUrl": "https://raw.githubusercontent.com/mediago-dev/mediago/master/remote-config/assets/settings-promo-drama-sidebar.webp"
+    },
+    "it": {
+      "title": "Workspace AI per comic drama",
+      "buttonText": "Prova Drama",
+      "imageUrl": "https://raw.githubusercontent.com/mediago-dev/mediago/master/remote-config/assets/settings-promo-drama.webp",
+      "sidebarImageUrl": "https://raw.githubusercontent.com/mediago-dev/mediago/master/remote-config/assets/settings-promo-drama-sidebar.webp"
+    }
+  }
+}

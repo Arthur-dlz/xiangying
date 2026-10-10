@@ -1,0 +1,122 @@
+// ============================================================
+// IPC Invoke channels (renderer → main, namespaced)
+// ============================================================
+
+export const IPC = {
+  resourceSearch: {
+    listProviders: "resourceSearch.listProviders",
+    saveProviders: "resourceSearch.saveProviders",
+    search: "resourceSearch.search",
+    cancel: "resourceSearch.cancel",
+  },
+  library: {
+    list: "library.list",
+    importFiles: "library.importFiles",
+    update: "library.update",
+    remove: "library.remove",
+    scan: "library.scan",
+    play: "library.play",
+    reveal: "library.reveal",
+    exportFiles: "library.exportFiles",
+  },
+  browser: {
+    createTab: "browser.createTab",
+    activateTab: "browser.activateTab",
+    closeTab: "browser.closeTab",
+    getTabs: "browser.getTabs",
+    loadURL: "browser.loadURL",
+    back: "browser.back",
+    reload: "browser.reload",
+    show: "browser.show",
+    hide: "browser.hide",
+    home: "browser.home",
+    setBounds: "browser.setBounds",
+    setUserAgent: "browser.setUserAgent",
+    clearCache: "browser.clearCache",
+    pluginReady: "browser.pluginReady",
+    showDownloadDialog: "browser.showDownloadDialog",
+    dismissOverlayDialog: "browser.dismissOverlayDialog",
+  },
+  app: {
+    getEnvPath: "app.getEnvPath",
+    getExtensionDir: "app.getExtensionDir",
+    getPreferredSystemLanguage: "app.getPreferredSystemLanguage",
+    getSharedState: "app.getSharedState",
+    setSharedState: "app.setSharedState",
+    showBrowserWindow: "app.showBrowserWindow",
+    combineToHomePage: "app.combineToHomePage",
+    drainShareIntents: "app.drainShareIntents",
+  },
+  dialog: {
+    open: "dialog.open",
+    save: "dialog.save",
+  },
+  shell: {
+    open: "shell.open",
+  },
+  contextMenu: {
+    show: "contextMenu.show",
+  },
+  cli: {
+    getStatus: "cli.getStatus",
+    install: "cli.install",
+  },
+  update: {
+    getState: "update.getState",
+    check: "update.check",
+    startDownload: "update.startDownload",
+    install: "update.install",
+    openLogDirectory: "update.openLogDirectory",
+    getDiagnosticInfo: "update.getDiagnosticInfo",
+  },
+} as const;
+
+// ============================================================
+// IPC Send events (main → renderer, namespaced)
+// ============================================================
+
+export const IpcEvent = {
+  app: {
+    shareIntentAvailable: "app:shareIntentAvailable",
+  },
+  browser: {
+    tabsChanged: "browser:tabsChanged",
+    domReady: "browser:domReady",
+    didNavigate: "browser:didNavigate",
+    didNavigateInPage: "browser:didNavigateInPage",
+    didFailLoad: "browser:didFailLoad",
+    sourceDetected: "browser:sourceDetected",
+    showOverlayDialog: "browser:showOverlayDialog",
+    privacyChanged: "browser:privacyChanged",
+  },
+  update: {
+    stateChanged: "update:stateChanged",
+    checking: "update:checking",
+    available: "update:available",
+    notAvailable: "update:notAvailable",
+    downloadProgress: "update:downloadProgress",
+    downloaded: "update:downloaded",
+  },
+  config: {
+    changed: "config:changed",
+  },
+} as const;
+
+// ============================================================
+// Reflect metadata keys
+// ============================================================
+
+export const MEDIAGO_EVENT = "mediago:event";
+export const MEDIAGO_METHOD = "mediago:method";
+
+// ============================================================
+// SWR cache keys (not IPC channels)
+// ============================================================
+
+export const IS_SETUP = "is-setup";
+
+// ============================================================
+// Shared event names (used by both Go Core SSE and UI)
+// ============================================================
+
+export const DOWNLOAD_EVENT_NAME = "download-event";

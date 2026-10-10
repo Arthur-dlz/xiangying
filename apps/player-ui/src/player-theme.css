@@ -1,0 +1,50 @@
+.vjs-theme-sea {
+  --mediago-player-icon: oklch(1 0 0);
+  --mediago-player-control: oklch(0 0 0 / 62%);
+
+  color: var(--mediago-player-icon);
+}
+
+.vjs-theme-sea .vjs-control-bar,
+.vjs-theme-sea .vjs-button {
+  color: var(--mediago-player-icon);
+}
+
+.vjs-theme-sea .vjs-button:hover,
+.vjs-theme-sea .vjs-button:focus-visible {
+  background: var(--mediago-player-control);
+  color: var(--mediago-player-icon);
+}
+
+.vjs-theme-sea .vjs-button > .vjs-icon-placeholder::before {
+  font-size: 1.6em;
+}
+
+.vjs-theme-sea .vjs-big-play-button {
+  top: 50%;
+  left: 50%;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  border: 1px solid oklch(1 0 0 / 30%);
+  border-radius: 9999px;
+  background: var(--mediago-player-control);
+  color: var(--mediago-player-icon);
+}
+
+.vjs-theme-sea:hover .vjs-big-play-button,
+.vjs-theme-sea .vjs-big-play-button:focus {
+  background: oklch(0 0 0 / 76%);
+  color: var(--mediago-player-icon);
+}
+
+.vjs-theme-sea .vjs-big-play-button .vjs-icon-placeholder::before {
+  font-size: 1.5rem;
+  line-height: 3.5rem;
+}
+
+.vjs-theme-sea .vjs-loading-spinner {
+  width: 3rem;
+  height: 3rem;
+}

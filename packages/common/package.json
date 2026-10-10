@@ -1,0 +1,23 @@
+{
+  "name": "@mediago/common",
+  "version": "1.0.0",
+  "type": "module",
+  "types": "./build/index.d.ts",
+  "exports": {
+    ".": "./build/index.js",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "dev": "tsdown --watch ./src",
+    "build": "tsdown",
+    "type:check": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "caorushizi",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^26.3.0",
+    "tsdown": "^0.22.14",
+    "typescript": "^7.0.2"
+  }
+}

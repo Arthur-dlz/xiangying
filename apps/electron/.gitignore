@@ -1,0 +1,9 @@
+.bin
+node_modules
+build
+dist
+bin/Logs
+release
+./types
+.DS_Store
+logs
