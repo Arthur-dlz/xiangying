@@ -1,9 +1,16 @@
 package dto
 
 import (
+	"regexp"
+
 	"caorushizi.cn/mediago/internal/core"
 	"github.com/google/uuid"
 )
+
+// taskIDPattern constrains client-supplied task IDs to a filesystem-safe
+// charset. The ID is later joined into a task log path, so anything that could
+// act as a path separator (slash, backslash, "..") must be rejected here.
+var taskIDPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$`)
 
 // CreateTaskReq Create task request DTO
 type CreateTaskReq struct {
@@ -18,7 +25,7 @@ type CreateTaskReq struct {
 // ToDownloadParams Convert to core download parameters
 func (r *CreateTaskReq) ToDownloadParams() core.DownloadParams {
 	id := r.ID
-	if id == "" {
+	if id == "" || !taskIDPattern.MatchString(id) {
 		id = uuid.New().String()
 	}
 	downloadType := r.Type

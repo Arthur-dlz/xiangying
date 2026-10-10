@@ -192,6 +192,7 @@ func (i *M3U8Inspector) fetch(ctx context.Context, rawURL string, headers []stri
 	applyInspectHeaders(req, headers)
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
+	proxyConfigured := false
 	if useProxy, _ := i.config.Get("useProxy").(bool); useProxy {
 		proxyValue, _ := i.config.Get("proxy").(string)
 		if proxyValue != "" {
@@ -203,7 +204,14 @@ func (i *M3U8Inspector) fetch(ctx context.Context, rawURL string, headers []stri
 				return fetchedManifest{}, fmt.Errorf("parse configured proxy: %w", err)
 			}
 			transport.Proxy = http.ProxyURL(proxyURL)
+			proxyConfigured = true
 		}
+	}
+	if !proxyConfigured {
+		// Direct connections must not reach non-public addresses (SSRF guard).
+		// When a proxy is configured the dial target is the proxy itself, so
+		// the guard does not apply.
+		transport.DialContext = dialPublicAddress
 	}
 
 	client := &http.Client{

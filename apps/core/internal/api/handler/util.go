@@ -1,9 +1,10 @@
 package handler
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"regexp"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"caorushizi.cn/mediago/internal/api/dto"
 	"caorushizi.cn/mediago/internal/i18n"
 	"caorushizi.cn/mediago/internal/logger"
+	"caorushizi.cn/mediago/internal/service"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -77,7 +79,15 @@ func (h *UtilHandler) GetPageTitle(c *gin.Context) {
 		return
 	}
 
-	title := fetchTitle(url)
+	title, err := fetchTitle(c.Request.Context(), url)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, dto.ErrorResponse{
+			Success: false,
+			Code:    http.StatusBadGateway,
+			Message: i18n.T(c, i18n.MsgInternalError),
+		})
+		return
+	}
 
 	c.JSON(http.StatusOK, dto.SuccessResponse{
 		Success: true,
@@ -87,41 +97,46 @@ func (h *UtilHandler) GetPageTitle(c *gin.Context) {
 	})
 }
 
-func fetchTitle(url string) string {
-	client := &http.Client{Timeout: 10 * time.Second}
-	req, err := http.NewRequest("GET", url, nil)
+// fetchTitle fetches rawURL and extracts its HTML <title>. It reports a failure
+// instead of returning a fabricated name, so callers can tell a real title from
+// a failed fetch. The outbound request is bound to ctx and uses a client that
+// refuses non-public destinations (SSRF guard).
+func fetchTitle(ctx context.Context, rawURL string) (string, error) {
+	client := service.NewPublicHTTPClient(10 * time.Second)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
-		logger.Warn("getPageTitle: failed to create request", zap.String("url", url), zap.Error(err))
-		return randomName()
+		logger.Warn("getPageTitle: failed to create request", zap.String("url", rawURL), zap.Error(err))
+		return "", fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36")
-	req.Header.Set("Referer", url)
+	req.Header.Set("Referer", rawURL)
 
 	resp, err := client.Do(req)
 	if err != nil {
-		logger.Warn("getPageTitle: request failed", zap.String("url", url), zap.Error(err))
-		return randomName()
+		logger.Warn("getPageTitle: request failed", zap.String("url", rawURL), zap.Error(err))
+		return "", fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		logger.Warn("getPageTitle: unexpected status", zap.String("url", rawURL), zap.Int("status", resp.StatusCode))
+		return "", fmt.Errorf("unexpected status %d", resp.StatusCode)
+	}
 
 	// Read up to 64KB to find the title
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 64*1024))
 	if err != nil {
-		logger.Warn("getPageTitle: failed to read body", zap.String("url", url), zap.Error(err))
-		return randomName()
+		logger.Warn("getPageTitle: failed to read body", zap.String("url", rawURL), zap.Error(err))
+		return "", fmt.Errorf("read body: %w", err)
 	}
 
 	matches := titleRegex.FindSubmatch(body)
 	if len(matches) >= 2 {
 		title := strings.TrimSpace(string(matches[1]))
 		if title != "" {
-			return title
+			return title, nil
 		}
 	}
 
-	return randomName()
-}
-
-func randomName() string {
-	return fmt.Sprintf("download_%d", rand.Int63())
+	return "", errors.New("no title found")
 }

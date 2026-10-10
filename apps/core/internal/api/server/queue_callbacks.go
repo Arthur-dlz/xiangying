@@ -68,7 +68,10 @@ func (s *Server) setupQueueCallbacks() {
 		}
 		dbID, err := strconv.ParseInt(string(id), 10, 64)
 		if err != nil {
-			return err
+			// A client-supplied non-numeric ID has no persisted DB row. The
+			// download itself succeeded, so returning an error here would mark
+			// the task failed and broadcast a spurious download-failed event.
+			return nil
 		}
 		return s.downloadService.CompleteDownload(dbID, result)
 	})
