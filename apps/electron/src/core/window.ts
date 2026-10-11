@@ -23,6 +23,7 @@ export default class Window {
     }
 
     const window = new BrowserWindow(this.options);
+    this.window = window;
     const webContentsId = window.webContents.id;
     registerTrustedAppContents(webContentsId);
     window.webContents.once("destroyed", () => {

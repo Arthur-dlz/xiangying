@@ -36,13 +36,10 @@ function resolveDesktopCorePort(): number {
   return port;
 }
 export interface DownloadTaskOptions {
-  deleteSegments: boolean;
   folder?: string;
   headers?: string[];
   id: string;
-  localDir: string;
   name: string;
-  proxy?: string;
   type: DownloadType;
   url: string;
 }

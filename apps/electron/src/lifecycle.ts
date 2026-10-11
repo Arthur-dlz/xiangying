@@ -16,7 +16,15 @@ export function registerGracefulQuit(
   let quitting = false;
 
   app.on("before-quit", (event) => {
-    if (quitting) return;
+    if (quitting) {
+      // This is the resumed quit we triggered after shutdown. Let it proceed,
+      // but re-arm the guard: if another listener cancels this quit the app
+      // keeps running, and the next attempt must run the graceful shutdown
+      // again instead of exiting without it.
+      quitting = false;
+      stopping = false;
+      return;
+    }
 
     event.preventDefault();
     if (stopping) return;
@@ -24,7 +32,13 @@ export function registerGracefulQuit(
     stopping = true;
     void Promise.resolve()
       .then(shutdown)
-      .catch((error) => onError(error))
+      .catch((error) => {
+        try {
+          onError(error);
+        } catch {
+          // Swallow errors thrown by the error handler so the quit can resume.
+        }
+      })
       .finally(() => {
         quitting = true;
         app.quit();

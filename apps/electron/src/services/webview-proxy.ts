@@ -21,6 +21,18 @@ export function enableSessionProxy(
     ? proxy
     : `http://${proxy}`;
 
-  session.setProxy({ proxyRules });
+  const result = session.setProxy({ proxyRules }) as
+    | Promise<unknown>
+    | undefined;
+  if (result && typeof result.then === "function") {
+    // Electron's session.setProxy is async: only report success once it
+    // actually resolves, and log failures instead of swallowing them.
+    void result.then(
+      () => logger.info("[Proxy] proxy enabled"),
+      (error) => logger.error("[Proxy] failed to enable proxy", error),
+    );
+    return;
+  }
+
   logger.info("[Proxy] proxy enabled");
 }

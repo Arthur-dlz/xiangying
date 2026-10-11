@@ -50,8 +50,9 @@ export function getFileExtension(url: string): string {
   try {
     const urlObj = new URL(url);
     const pathname = urlObj.pathname;
-    const extension = pathname.split(".").pop() || "";
-    return extension.toLowerCase();
+    const lastSegment = pathname.split("/").pop() || "";
+    const dotIndex = lastSegment.lastIndexOf(".");
+    return dotIndex > 0 ? lastSegment.slice(dotIndex + 1).toLowerCase() : "";
   } catch {
     return "";
   }

@@ -16,17 +16,26 @@ export default class ProtocolService {
 
     protocol.handle(defaultScheme, async (req) => {
       const pathName = new URL(req.url).pathname;
-      let filePath = join(__dirname, "../renderer", pathName);
+      const rendererDir = join(__dirname, "../renderer");
+      const resolved = path.resolve(rendererDir, `.${pathName}`);
+      let filePath =
+        resolved === rendererDir || resolved.startsWith(rendererDir + path.sep)
+          ? resolved
+          : join(rendererDir, "index.html");
       try {
         await access(filePath);
       } catch {
-        filePath = join(__dirname, "../renderer/index.html");
+        filePath = join(rendererDir, "index.html");
       }
-      const mimeType = mime.lookup(filePath);
-      const data = await readFile(filePath);
-      return new Response(data, {
-        headers: { "Content-Type": mimeType || "text/html" },
-      });
+      try {
+        const mimeType = mime.lookup(filePath);
+        const data = await readFile(filePath);
+        return new Response(data, {
+          headers: { "Content-Type": mimeType || "text/html" },
+        });
+      } catch {
+        return new Response("Not Found", { status: 404 });
+      }
     });
   }
 }

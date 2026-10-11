@@ -30,8 +30,15 @@ export function inspectionToMediaInfo(
 
 const SENSITIVE_DISCOVERY_HEADERS = new Set([
   "authorization",
+  "authentication",
   "cookie",
   "proxy-authorization",
+  "set-cookie",
+  "www-authenticate",
+  "x-api-key",
+  "x-auth-token",
+  "x-csrf-token",
+  "x-session-token",
 ]);
 
 export interface DiscoveryHeaderSplit {

@@ -93,6 +93,7 @@ interface SniffingContext {
   generation: number;
   inspectSequence: number;
   inspectTimer: ReturnType<typeof setTimeout> | null;
+  inspectionsInFlight: number;
   kind: "user" | "agent";
   pageHeaders: Map<DownloadType, string>;
   pageInfo: PageInfo;
@@ -131,6 +132,24 @@ const INSPECTION_PUBLIC_HEADERS = new Set([
   "referer",
   "user-agent",
 ]);
+const INSPECTION_PRIVATE_HEADERS = new Set([
+  "authorization",
+  "cookie",
+  "proxy-authorization",
+]);
+
+function filterAllowedHeaders(
+  headers: string[],
+  allowlist: Set<string>,
+): string[] {
+  return headers.filter((header) => {
+    const separator = header.indexOf(":");
+    return (
+      separator > 0 &&
+      allowlist.has(header.slice(0, separator).trim().toLowerCase())
+    );
+  });
+}
 
 function headersForInspection(
   context: SniffingContext,
@@ -142,17 +161,18 @@ function headersForInspection(
     formattedHeadersToArray(rawHeaders),
     includePrivateHeaders,
   );
-  const safePublicHeaders = publicHeaders.filter((header) => {
-    const separator = header.indexOf(":");
-    return (
-      separator > 0 &&
-      INSPECTION_PUBLIC_HEADERS.has(
-        header.slice(0, separator).trim().toLowerCase(),
-      )
-    );
-  });
+  const safePublicHeaders = filterAllowedHeaders(
+    publicHeaders,
+    INSPECTION_PUBLIC_HEADERS,
+  );
+  // Only ever forward the classic credential trio on explicit opt-in; other
+  // sensitive headers (x-api-key, x-auth-token, ...) stay out of the RPC.
+  const safePrivateHeaders = filterAllowedHeaders(
+    privateHeaders,
+    INSPECTION_PRIVATE_HEADERS,
+  );
   return includePrivateHeaders
-    ? [...safePublicHeaders, ...privateHeaders]
+    ? [...safePublicHeaders, ...safePrivateHeaders]
     : safePublicHeaders;
 }
 
@@ -187,6 +207,7 @@ export class SniffingHelper extends EventEmitter {
       generation: 0,
       inspectSequence: 0,
       inspectTimer: null,
+      inspectionsInFlight: 0,
       kind: options.kind,
       pageHeaders: new Map(),
       pageInfo: options.initialPageInfo ?? { title: "", url: "" },
@@ -536,6 +557,10 @@ export class SniffingHelper extends EventEmitter {
     if (pending.length === 0) return;
 
     const generation = context.generation;
+    // Mark the context busy before the first await so a concurrent
+    // collectAgentSource/markDomReady cannot arm the quiet timer and resolve
+    // the collector while these inspections are still in flight.
+    context.inspectionsInFlight += 1;
     try {
       const client = this.downloaderServer.getClient();
       const inputs = pending.map(({ id, item }) => ({
@@ -583,6 +608,7 @@ export class SniffingHelper extends EventEmitter {
         });
       }
     } finally {
+      context.inspectionsInFlight -= 1;
       if (this.isCurrentContext(context, generation)) {
         this.scheduleQuietCompletion(context);
       }
@@ -593,7 +619,12 @@ export class SniffingHelper extends EventEmitter {
     const collector = context.collector;
     if (!collector || collector.settled) return;
     if (!context.domReady) return;
-    if (context.pendingInspections.size > 0 || context.inspectTimer) return;
+    if (
+      context.pendingInspections.size > 0 ||
+      context.inspectTimer ||
+      context.inspectionsInFlight > 0
+    )
+      return;
     this.clearQuietTimer(context);
     collector.quietTimer = setTimeout(() => {
       collector.quietTimer = null;

@@ -13,6 +13,8 @@ import fs from "node:fs/promises";
 import { inject, injectable } from "inversify";
 import MainWindow from "../windows/main.window";
 
+const MAX_DIALOG_READ_BYTES = 64 * 1024 * 1024;
+
 @injectable()
 @provide(TYPES.Controller)
 export default class DialogController implements Controller {
@@ -42,7 +44,19 @@ export default class DialogController implements Controller {
     // Optionally read file content instead of returning paths
     if (options.readContent && options.type === "file") {
       const contents = await Promise.all(
-        result.filePaths.map((p) => fs.readFile(p, "utf-8")),
+        result.filePaths.map(async (p) => {
+          try {
+            const { size } = await fs.stat(p);
+            if (size > MAX_DIALOG_READ_BYTES) {
+              throw new Error("file too large");
+            }
+            return await fs.readFile(p, "utf-8");
+          } catch {
+            // Contain the raw Node error per file and surface a user-facing
+            // i18n message instead of rejecting with an unhandled error.
+            throw new Error(i18n.t("unknownError"));
+          }
+        }),
       );
       return contents;
     }

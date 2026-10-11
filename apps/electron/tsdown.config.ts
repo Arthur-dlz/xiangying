@@ -83,14 +83,22 @@ export class ElectronApp {
       path.resolve(__dirname, "./build/index.js"),
     ];
 
-    this.process = spawn(electronExecutable, args);
+    const child = spawn(electronExecutable, args);
+    this.process = child;
 
-    this.process.stdout.on("data", (data) => {
+    child.stdout.on("data", (data) => {
       process.stdout.write(String(data));
     });
 
-    this.process.stderr.on("data", (data) => {
+    child.stderr.on("data", (data) => {
       process.stderr.write(String(data));
+    });
+
+    child.on("error", (error) => {
+      process.stderr.write(`[electron-dev] ${formatError(error)}\n`);
+    });
+    child.on("exit", () => {
+      if (this.process === child) this.process = null;
     });
   }
 
@@ -114,13 +122,32 @@ export class ElectronApp {
   }
 
   private killProcess() {
-    if (this.process?.pid) {
+    const child = this.process;
+    if (!child?.pid) return;
+    const pid = child.pid;
+    try {
       if (process.platform === "win32") {
-        process.kill(this.process.pid);
+        // process.kill only signals the Electron main process; terminate the
+        // whole tree (renderer/GPU/utility and the spawned Go core).
+        spawn("taskkill", ["/pid", String(pid), "/T", "/F"], {
+          stdio: "ignore",
+        }).on("error", (error) => {
+          process.stderr.write(
+            `[electron-dev] taskkill failed: ${formatError(error)}\n`,
+          );
+        });
       } else {
-        spawn("kill", ["-9", String(this.process.pid)]);
+        process.kill(pid, "SIGKILL");
       }
-      this.process = null;
+    } catch (error) {
+      // The process may already be gone; ESRCH is expected.
+      if ((error as NodeJS.ErrnoException).code !== "ESRCH") {
+        process.stderr.write(
+          `[electron-dev] failed to terminate process ${pid}: ${formatError(error)}\n`,
+        );
+      }
+    } finally {
+      if (this.process === child) this.process = null;
     }
   }
 }

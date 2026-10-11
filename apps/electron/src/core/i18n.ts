@@ -19,7 +19,9 @@ const nodeI18nOptions: InitOptions = {
 };
 
 if (!i18n.isInitialized) {
-  void i18n.init(nodeI18nOptions);
+  i18n.init(nodeI18nOptions).catch((error: unknown) => {
+    console.error("[i18n] failed to initialize node i18n instance", error);
+  });
 }
 
 export { i18n };

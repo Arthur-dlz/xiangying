@@ -20,6 +20,7 @@ export default class OverlayDialogService {
   private visible = false;
   private ready = false;
   private pendingData: Omit<DownloadTask, "id">[] | null = null;
+  private attachedWindow: Electron.BrowserWindow | null = null;
 
   private readonly url = isDev
     ? "http://localhost:8500/download-dialog"
@@ -61,6 +62,11 @@ export default class OverlayDialogService {
 
     this.view.setBackgroundColor("#00000000");
 
+    webContents.on("did-start-loading", () => {
+      // A (re)load invalidates the renderer's IPC listener registration, so
+      // stop treating the view as ready until the next dom-ready.
+      this.ready = false;
+    });
     webContents.on("dom-ready", () => {
       this.ready = true;
       if (this.pendingData) {
@@ -83,23 +89,34 @@ export default class OverlayDialogService {
   }
 
   show(data: Omit<DownloadTask, "id">[]): void {
-    if (!this.view || !this.window) {
+    const target = this.window;
+    if (!this.view || !target) {
       this.logger.error("[OverlayDialog] view or window not available");
       return;
     }
 
-    if (this.visible) return;
+    if (this.visible) {
+      // Overlay is already open: forward the new payload so the renderer can
+      // refresh instead of silently dropping it.
+      if (this.ready) {
+        this.view.webContents.send(IpcEvent.browser.showOverlayDialog, data);
+      } else {
+        this.pendingData = data;
+      }
+      return;
+    }
 
     // Set bounds to cover the full window content area
-    const { width, height } = this.window.getContentBounds();
+    const { width, height } = target.getContentBounds();
     this.view.setBounds({ x: 0, y: 0, width, height });
 
     // Add as topmost child view
-    this.window.contentView.addChildView(this.view);
+    target.contentView.addChildView(this.view);
     this.visible = true;
+    this.attachedWindow = target;
 
     // Listen for resize to keep overlay in sync
-    this.window.on("resize", this.onResize);
+    target.on("resize", this.onResize);
 
     // Send data to the overlay renderer
     if (this.ready) {
@@ -110,16 +127,25 @@ export default class OverlayDialogService {
   }
 
   hide(): void {
-    if (!this.view || !this.window || !this.visible) return;
+    if (!this.visible) return;
 
-    this.window.contentView.removeChildView(this.view);
+    const target = this.attachedWindow;
     this.visible = false;
-    this.window.removeListener("resize", this.onResize);
+    this.attachedWindow = null;
+    // Drop any buffered payload so a later dom-ready cannot flush stale data
+    // into a hidden overlay.
+    this.pendingData = null;
+
+    if (!this.view || !target) return;
+
+    target.contentView.removeChildView(this.view);
+    target.removeListener("resize", this.onResize);
   }
 
   private onResize = () => {
-    if (!this.view || !this.window || !this.visible) return;
-    const { width, height } = this.window.getContentBounds();
+    const target = this.attachedWindow;
+    if (!this.view || !target || !this.visible) return;
+    const { width, height } = target.getContentBounds();
     this.view.setBounds({ x: 0, y: 0, width, height });
   };
 }
