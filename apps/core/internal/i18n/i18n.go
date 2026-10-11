@@ -58,6 +58,7 @@ var catalogs = map[string]map[string]string{
 		// Config
 		MsgConfigUpdated:    "Config updated",
 		MsgConfigKeyUpdated: "Config key '%s' updated",
+		MsgConfigReadOnly:   "Configuration is read-only: enable authentication to modify it",
 
 		// Util
 		MsgURLRequired: "url parameter is required",
@@ -121,6 +122,7 @@ var catalogs = map[string]map[string]string{
 		// Config
 		MsgConfigUpdated:    "配置已更新",
 		MsgConfigKeyUpdated: "配置键 '%s' 已更新",
+		MsgConfigReadOnly:   "配置为只读：请启用鉴权后再修改",
 
 		// Util
 		MsgURLRequired: "缺少 url 参数",
@@ -184,6 +186,7 @@ var catalogs = map[string]map[string]string{
 		// Config
 		MsgConfigUpdated:    "Configurazione aggiornata",
 		MsgConfigKeyUpdated: "Chiave di configurazione '%s' aggiornata",
+		MsgConfigReadOnly:   "Configurazione di sola lettura: abilita l'autenticazione per modificarla",
 
 		// Util
 		MsgURLRequired: "Il parametro url è obbligatorio",

@@ -3,9 +3,11 @@ package server
 import (
 	"context"
 	"io/fs"
+	"net/http"
 	"strings"
 
 	"caorushizi.cn/mediago/assets"
+	"caorushizi.cn/mediago/internal/api/dto"
 	"caorushizi.cn/mediago/internal/api/handler"
 	"caorushizi.cn/mediago/internal/api/middleware"
 	"caorushizi.cn/mediago/internal/api/sse"
@@ -15,11 +17,13 @@ import (
 	"caorushizi.cn/mediago/internal/discovery"
 	dockerproxy "caorushizi.cn/mediago/internal/docker"
 	"caorushizi.cn/mediago/internal/i18n"
+	"caorushizi.cn/mediago/internal/logger"
 	"caorushizi.cn/mediago/internal/service"
 	"caorushizi.cn/mediago/internal/tasklog"
 	"caorushizi.cn/mediago/internal/video"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // Server wraps the Gin Engine with its business dependencies.
@@ -28,6 +32,12 @@ type Server struct {
 	hub    *sse.Hub
 	engine *gin.Engine
 	logs   *tasklog.Manager
+
+	// Config-write authorization inputs (CRG-FIX-10-F3 read-only degradation).
+	confStore    handler.ConfigStore
+	desktopMode  bool
+	enableAuth   bool
+	loopbackBind bool
 
 	taskHandler            *handler.TaskHandler
 	configHandler          *handler.ConfigHandler
@@ -62,6 +72,9 @@ type Options struct {
 	EnvPaths            handler.EnvPaths
 	ElectronBridgeToken string
 	ElectronAPIToken    string
+	// Host is the bind host the server listens on. It decides whether config
+	// writes are read-only when no authentication is configured (CRG-FIX-10-F3).
+	Host string
 }
 
 // New creates an HTTP server instance.
@@ -116,6 +129,10 @@ func New(queue *core.TaskQueue, logs *tasklog.Manager, database *db.Database, co
 		hub:                    hub,
 		engine:                 engine,
 		logs:                   logs,
+		confStore:              confStore,
+		desktopMode:            opt.ElectronAPIToken != "",
+		enableAuth:             opt.EnableAuth,
+		loopbackBind:           isLoopbackHost(opt.Host),
 		taskHandler:            handler.NewTaskHandler(queue, logs),
 		configHandler:          handler.NewConfigHandler(confStore, hub),
 		eventHandler:           handler.NewEventHandler(hub),
@@ -174,6 +191,54 @@ func New(queue *core.TaskQueue, logs *tasklog.Manager, database *db.Database, co
 
 func shouldServeMainUI(electronBridgeToken string) bool {
 	return strings.TrimSpace(electronBridgeToken) == ""
+}
+
+// isLoopbackHost reports whether host binds to the loopback interface only.
+// An empty host is treated as loopback because the default config binds to
+// 127.0.0.1; only an explicit non-loopback host enables network exposure.
+func isLoopbackHost(host string) bool {
+	switch strings.TrimSpace(host) {
+	case "", "127.0.0.1", "localhost", "::1", "[::1]":
+		return true
+	default:
+		return false
+	}
+}
+
+// configWritesAllowed reports whether /api/config mutations are permitted.
+//
+// Read-only degradation (CRG-FIX-10-F3): when the server runs neither in
+// desktop mode (no Electron API token) nor with an authenticated session, and
+// it is bound to a non-loopback interface, config writes are rejected so an
+// exposed deployment cannot be mutated anonymously. Loopback binds are exempt
+// (local trust); desktop mode and authenticated requests are always allowed.
+func (s *Server) configWritesAllowed() bool {
+	if s.desktopMode {
+		return true
+	}
+	if s.enableAuth {
+		if key, _ := s.confStore.Get("apiKey").(string); key != "" {
+			return true
+		}
+	}
+	return s.loopbackBind
+}
+
+// requireConfigWrite is a Gin middleware that aborts config mutations with 403
+// when configWritesAllowed reports the deployment is read-only.
+func (s *Server) requireConfigWrite(c *gin.Context) {
+	if s.configWritesAllowed() {
+		c.Next()
+		return
+	}
+	logger.Warn("Rejected config write on read-only deployment",
+		zap.String("path", c.Request.URL.Path),
+		zap.String("clientIP", c.ClientIP()))
+	c.AbortWithStatusJSON(http.StatusForbidden, dto.ErrorResponse{
+		Success: false,
+		Code:    http.StatusForbidden,
+		Message: i18n.T(c, i18n.MsgConfigReadOnly),
+	})
 }
 
 func (s *Server) serveEmbeddedMainUI(files fs.FS) {

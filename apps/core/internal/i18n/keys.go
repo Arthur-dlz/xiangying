@@ -46,6 +46,7 @@ const (
 	// Config
 	MsgConfigUpdated    = "config.updated"
 	MsgConfigKeyUpdated = "config.key_updated" // fmt arg: %s (key name)
+	MsgConfigReadOnly   = "config.read_only"
 
 	// Util
 	MsgURLRequired = "util.url_required"

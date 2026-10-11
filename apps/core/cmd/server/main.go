@@ -82,6 +82,7 @@ func registerConfigFlags(fs *flag.FlagSet, cfg *app.AppConfig) {
 	fs.StringVar(&cfg.LogDir, "log-dir", cfg.LogDir, "Log directory")
 	fs.StringVar(&cfg.DepsDir, "deps-dir", cfg.DepsDir, "Directory containing downloader tool binaries")
 	fs.StringVar(&cfg.SchemaPath, "schema-path", cfg.SchemaPath, "Path to the download schema config.json")
+	fs.StringVar(&cfg.Host, "host", cfg.Host, "Server bind host (use 0.0.0.0 to listen on all interfaces)")
 	fs.StringVar(&cfg.Port, "port", cfg.Port, "Server port")
 	fs.StringVar(&cfg.LocalDir, "local-dir", cfg.LocalDir, "Default download directory")
 	fs.BoolVar(&cfg.DeleteSegments, "delete-segments", cfg.DeleteSegments, "Delete segments after download")
@@ -103,6 +104,7 @@ func runServer(rt *app.Runtime) error {
 		VideoRoot:           cfg.LocalDir,
 		ElectronBridgeToken: cfg.ElectronBridgeToken,
 		ElectronAPIToken:    cfg.ElectronAPIToken,
+		Host:                cfg.Host,
 		EnvPaths: handler.EnvPaths{
 			ConfigDir: cfg.ConfigDir,
 			BinDir:    filepath.Dir(execPath),

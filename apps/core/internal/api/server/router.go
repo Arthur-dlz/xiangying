@@ -28,9 +28,9 @@ func (s *Server) registerRoutes() {
 		api.GET("/tasks/:id/logs", s.taskHandler.Logs)
 
 		api.GET("/config", s.configHandler.GetStore)
-		api.POST("/config", s.configHandler.Update)
+		api.POST("/config", s.requireConfigWrite, s.configHandler.Update)
 		api.GET("/config/:key", s.configHandler.GetKey)
-		api.PUT("/config/:key", s.configHandler.SetKey)
+		api.PUT("/config/:key", s.requireConfigWrite, s.configHandler.SetKey)
 
 		api.GET("/events", s.eventHandler.Stream)
 

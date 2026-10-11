@@ -1,8 +1,11 @@
 package handler
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 
 	"caorushizi.cn/mediago/internal/api/dto"
 	"caorushizi.cn/mediago/internal/api/sse"
@@ -11,6 +14,65 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
+
+// errorCodeConfigNotFound is returned when a config key must not be disclosed.
+const errorCodeConfigNotFound = "config_not_found"
+
+// sensitiveConfigKeys lists config keys that must never be exposed through read
+// APIs or SSE broadcasts. apiKey/mcpToken are intentionally excluded: the web UI
+// consumes them for login-state recovery and MCP cards, so they must be returned
+// as-is (network exposure is handled by the default loopback Host).
+var sensitiveConfigKeys = map[string]struct{}{
+	"passwordHash": {},
+}
+
+// isSensitiveConfigKey reports whether the given config key must be redacted.
+// The key may use dot-notation (e.g. "foo.passwordHash"); it is sensitive when
+// the full key or any of its dot-separated segments names a sensitive field, so
+// the guard stays aligned with the store's dot-path lookup semantics.
+func isSensitiveConfigKey(key string) bool {
+	if _, sensitive := sensitiveConfigKeys[key]; sensitive {
+		return true
+	}
+	for _, segment := range strings.Split(key, ".") {
+		if _, sensitive := sensitiveConfigKeys[segment]; sensitive {
+			return true
+		}
+	}
+	return false
+}
+
+// redactConfigSecrets projects the config store into a JSON map with sensitive
+// values blanked, preserving every other field (including apiKey/mcpToken).
+// It fails closed: if the store cannot be projected it returns an error rather
+// than the raw store, so sensitive fields are never leaked on failure.
+func redactConfigSecrets(store any) (any, error) {
+	if store == nil {
+		return store, nil
+	}
+	raw, err := json.Marshal(store)
+	if err != nil {
+		return nil, fmt.Errorf("redact config: marshal: %w", err)
+	}
+	var projected map[string]any
+	if err := json.Unmarshal(raw, &projected); err != nil {
+		return nil, fmt.Errorf("redact config: unmarshal: %w", err)
+	}
+	for key := range sensitiveConfigKeys {
+		if _, ok := projected[key]; ok {
+			projected[key] = ""
+		}
+	}
+	return projected, nil
+}
+
+// redactConfigValue blanks the value of a sensitive config key before broadcast.
+func redactConfigValue(key string, value any) any {
+	if isSensitiveConfigKey(key) {
+		return ""
+	}
+	return value
+}
 
 // ConfigStore is the interface that the config handler needs from the conf package.
 type ConfigStore interface {
@@ -74,12 +136,17 @@ func NewConfigHandler(conf ConfigStore, hub *sse.Hub) *ConfigHandler {
 // @Success 200 {object} dto.SuccessResponse "Full configuration"
 // @Router /config [get]
 func (h *ConfigHandler) GetStore(c *gin.Context) {
-	store := h.conf.Store()
+	projected, err := redactConfigSecrets(h.conf.Store())
+	if err != nil {
+		logger.Error("Failed to redact config store", zap.Error(err))
+		writeInternalError(c)
+		return
+	}
 	c.JSON(http.StatusOK, dto.SuccessResponse{
 		Success: true,
 		Code:    http.StatusOK,
 		Message: i18n.T(c, i18n.MsgOK),
-		Data:    store,
+		Data:    projected,
 	})
 }
 
@@ -119,7 +186,7 @@ func (h *ConfigHandler) Update(c *gin.Context) {
 
 	// Broadcast each changed key
 	for key, value := range req {
-		h.hub.Broadcast("config-changed", map[string]any{"key": key, "value": value})
+		h.hub.Broadcast("config-changed", map[string]any{"key": key, "value": redactConfigValue(key, value)})
 	}
 
 	c.JSON(http.StatusOK, dto.SuccessResponse{
@@ -140,6 +207,11 @@ func (h *ConfigHandler) Update(c *gin.Context) {
 // @Router /config/{key} [get]
 func (h *ConfigHandler) GetKey(c *gin.Context) {
 	key := c.Param("key")
+	if isSensitiveConfigKey(key) {
+		// Return 404 (not 403) to avoid disclosing the key's existence.
+		writeErrorResponse(c, http.StatusNotFound, errorCodeConfigNotFound, "config not found")
+		return
+	}
 	value := h.conf.Get(key)
 
 	c.JSON(http.StatusOK, dto.SuccessResponse{
@@ -176,7 +248,7 @@ func (h *ConfigHandler) SetKey(c *gin.Context) {
 		return
 	}
 
-	h.hub.Broadcast("config-changed", map[string]any{"key": key, "value": req.Value})
+	h.hub.Broadcast("config-changed", map[string]any{"key": key, "value": redactConfigValue(key, req.Value)})
 
 	c.JSON(http.StatusOK, dto.SuccessResponse{
 		Success: true,
