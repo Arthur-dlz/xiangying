@@ -33,6 +33,7 @@ import {
   useBrowserStore,
 } from "@/store/browser";
 import { usePlatform } from "@/hooks/use-platform";
+import { createDockerDownloadTasks } from "@/api/docker-download-task";
 import { createDownloadTasks } from "@/api/download-task";
 import type { DownloadTask } from "@mediago/common";
 import { filterSources } from "./source-filter";
@@ -41,6 +42,7 @@ import { sourceTypeLabel } from "./source-type-label";
 interface SourceItemProps {
   item: SourceData;
   enableDocker: boolean;
+  onAddToDocker: (item: SourceData) => Promise<void>;
   onDelete: (url: string) => void;
   onEdit: (items: SourceData[]) => void;
   onDownload: (item: SourceData) => Promise<void>;
@@ -49,6 +51,7 @@ interface SourceItemProps {
 const SourceItem = memo(function SourceItem({
   item,
   enableDocker,
+  onAddToDocker,
   onDelete,
   onEdit,
   onDownload,
@@ -66,6 +69,7 @@ const SourceItem = memo(function SourceItem({
   );
   const [selectedURL, setSelectedURL] = useState(item.url);
   const [downloading, setDownloading] = useState(false);
+  const [addingToDocker, setAddingToDocker] = useState(false);
 
   useEffect(() => {
     setSelectedURL((current) =>
@@ -94,6 +98,16 @@ const SourceItem = memo(function SourceItem({
       await onDownload(selectedItem);
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const handleAddToDocker = async () => {
+    if (addingToDocker) return;
+    setAddingToDocker(true);
+    try {
+      await onAddToDocker(selectedItem);
+    } finally {
+      setAddingToDocker(false);
     }
   };
 
@@ -199,9 +213,10 @@ const SourceItem = memo(function SourceItem({
               variant="ghost"
               size="sm"
               className="size-6 p-0"
-              title={t("edit")}
-              aria-label={t("edit")}
-              onClick={() => onEdit([selectedItem])}
+              disabled={addingToDocker}
+              title={t("addToDocker")}
+              aria-label={t("addToDocker")}
+              onClick={() => void handleAddToDocker()}
             >
               <Container className="size-4" />
             </Button>
@@ -273,6 +288,22 @@ export function BrowserViewPanel() {
     }
   });
 
+  const handleAddToDocker = useMemoizedFn(async (item: SourceData) => {
+    try {
+      const downloadTask: Omit<DownloadTask, "id"> = {
+        url: item.url,
+        name: item.name,
+        headers: item.headers,
+        type: item.type,
+        folder: "",
+      };
+      await createDockerDownloadTasks([downloadTask]);
+      toast.success(t("addToDockerSuccess"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    }
+  });
+
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="mx-3 flex shrink-0 items-center gap-2 border-b py-3">
@@ -317,6 +348,7 @@ export function BrowserViewPanel() {
               key={item.id}
               item={item}
               enableDocker={enableDocker}
+              onAddToDocker={handleAddToDocker}
               onDelete={(url) => deleteSource(tabId, url)}
               onEdit={handleEdit}
               onDownload={handleDownloadNow}

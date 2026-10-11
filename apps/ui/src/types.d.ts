@@ -10,7 +10,3 @@ declare interface UrlDetail {
   url: string;
   title: string;
 }
-
-interface ObjectConstructor {
-  keys<T>(o: T): (keyof T)[];
-}

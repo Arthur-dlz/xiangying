@@ -41,14 +41,16 @@
         const systemLanguage = (
           navigator.languages?.[0] || navigator.language
         ).toLowerCase();
-        const language =
-          preferredLanguage === "system"
-            ? systemLanguage.startsWith("zh")
-              ? "zh"
-              : systemLanguage.startsWith("it")
-                ? "it"
-                : "en"
-            : preferredLanguage;
+        const isSupportedLanguage =
+          preferredLanguage === "zh" ||
+          preferredLanguage === "en" ||
+          preferredLanguage === "it";
+        let language = preferredLanguage;
+        if (preferredLanguage === "system" || !isSupportedLanguage) {
+          if (systemLanguage.startsWith("zh")) language = "zh";
+          else if (systemLanguage.startsWith("it")) language = "it";
+          else language = "en";
+        }
         root.lang = language;
         root.dataset.bootLanguage = language;
       })();

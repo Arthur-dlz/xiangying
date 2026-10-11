@@ -53,7 +53,7 @@ function readStoredIntents(storage: StorageLike): ShareIntent[] {
       storage.getItem(STORAGE_KEY) || "null",
     ) as StoredShareIntents | null;
     if (stored?.version !== 1 || !Array.isArray(stored.intents)) return [];
-    return stored.intents.filter(isFreshShareIntent);
+    return stored.intents.filter((intent) => isFreshShareIntent(intent));
   } catch {
     return [];
   }

@@ -110,10 +110,14 @@ export function DownloadTaskList({
 
   const onStartDownload = useMemoizedFn(async (task: DownloadTaskDetails) => {
     if (task.remoteOffline) return;
-    if (task.origin === "docker") await startDockerDownload(task.id);
-    else await startDownload(task.id);
-    toast.success(t("downloadStarted"));
-    await mutate();
+    try {
+      if (task.origin === "docker") await startDockerDownload(task.id);
+      else await startDownload(task.id);
+      toast.success(t("downloadStarted"));
+      await mutate();
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : String(cause));
+    }
   });
 
   const onStopDownload = useMemoizedFn(async (task: DownloadTaskDetails) => {
@@ -129,8 +133,13 @@ export function DownloadTaskList({
 
   const onDelete = useMemoizedFn(async (task: DownloadTaskDetails) => {
     if (task.remoteOffline) return;
-    if (task.origin === "docker") await deleteDockerDownloadTask(task.id);
-    else await deleteDownloadTask(task.id);
+    try {
+      if (task.origin === "docker") await deleteDockerDownloadTask(task.id);
+      else await deleteDownloadTask(task.id);
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : String(cause));
+      return;
+    }
     const key = taskRefKey(task);
     setSelected((current) =>
       current.filter((selectedId) => selectedId !== key),

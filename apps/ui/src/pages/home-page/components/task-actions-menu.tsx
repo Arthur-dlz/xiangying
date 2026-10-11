@@ -54,6 +54,14 @@ export function TaskActionsMenu({
     task.status === DownloadStatus.Stopped;
   const canEdit = canRestart;
 
+  const startLabel = (() => {
+    if (task.status === DownloadStatus.Failed) return t("redownload");
+    if (task.status === DownloadStatus.Stopped) {
+      return task.isLive ? t("recordAgain") : t("continueDownload");
+    }
+    return t("download");
+  })();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -70,13 +78,7 @@ export function TaskActionsMenu({
         {canRestart ? (
           <DropdownMenuItem onSelect={onStart}>
             <Download />
-            {task.status === DownloadStatus.Failed
-              ? t("redownload")
-              : task.status === DownloadStatus.Stopped
-                ? task.isLive
-                  ? t("recordAgain")
-                  : t("continueDownload")
-                : t("download")}
+            {startLabel}
           </DropdownMenuItem>
         ) : null}
         {task.status === DownloadStatus.Downloading ? (

@@ -45,6 +45,8 @@ const BrowserTabButton = memo(function BrowserTabButton({
   const badge = formatSourceBadge(tab.sources.length);
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    // Ignore key events bubbling from the nested close button; it handles its own activation.
+    if (event.target !== event.currentTarget) return;
     if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
       event.preventDefault();
       onMoveFocus(tab.id, event.key === "ArrowRight" ? 1 : -1);

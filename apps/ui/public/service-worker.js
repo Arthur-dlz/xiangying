@@ -68,7 +68,7 @@ async function redirectShareRequest(request) {
 async function networkFirstNavigation(request) {
   try {
     const response = await fetch(request);
-    if (response.ok) {
+    if (response.ok && new URL(request.url).pathname === "/") {
       const cache = await caches.open(CACHE_NAME);
       await cache.put("/", response.clone());
     }

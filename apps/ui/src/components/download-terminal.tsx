@@ -23,6 +23,8 @@ const Terminal: FC<TerminalProps> = ({
   header,
 }) => {
   const terminalRef = useRef<HTMLDivElement | null>(null);
+  const terminalInstanceRef = useRef<XTerminal | null>(null);
+  const writtenLogKeyRef = useRef<string | null>(null);
   const { on, off } = usePlatform();
   const { data } = useSWR(
     { key: "download-log", args: { id, origin } },
@@ -60,6 +62,8 @@ const Terminal: FC<TerminalProps> = ({
         white: "#e5e7eb",
       },
     });
+    terminalInstanceRef.current = terminal;
+    writtenLogKeyRef.current = null;
     const fitAddon = new FitAddon();
     terminal.loadAddon(fitAddon);
     terminal.open(element);
@@ -87,8 +91,6 @@ const Terminal: FC<TerminalProps> = ({
       return false;
     });
 
-    if (data?.log) terminal.write(data.log);
-
     const onDownloadMessage = (...args: unknown[]) => {
       const messageId = args[1];
       const message = args[2];
@@ -104,9 +106,23 @@ const Terminal: FC<TerminalProps> = ({
       cancelAnimationFrame(frame);
       resizeObserver.disconnect();
       if (origin === "local") off("download-message", onDownloadMessage);
+      terminalInstanceRef.current = null;
       terminal.dispose();
     };
-  }, [data, id, off, on, origin]);
+  }, [id, off, on, origin]);
+
+  // Write the log snapshot exactly once per terminal instance (id/origin).
+  // Keeping the terminal mounted across SWR revalidations preserves scrollback
+  // and any output streamed via "download-message".
+  useEffect(() => {
+    const terminal = terminalInstanceRef.current;
+    const log = data?.log;
+    if (!terminal || !log) return;
+    const logKey = `${id}:${origin}`;
+    if (writtenLogKeyRef.current === logKey) return;
+    terminal.write(log);
+    writtenLogKeyRef.current = logKey;
+  }, [data?.log, id, origin]);
 
   return (
     <div className={cn("flex min-h-0 flex-col", className)}>

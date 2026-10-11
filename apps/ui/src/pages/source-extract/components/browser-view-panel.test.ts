@@ -11,6 +11,7 @@ import { DownloadType } from "@mediago/common";
 
 const mocks = vi.hoisted(() => ({
   createDownloadTasks: vi.fn(),
+  createDockerDownloadTasks: vi.fn(),
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
 }));
@@ -28,6 +29,10 @@ vi.mock("@/api/download-task", () => ({
   createDownloadTasks: mocks.createDownloadTasks,
 }));
 
+vi.mock("@/api/docker-download-task", () => ({
+  createDockerDownloadTasks: mocks.createDockerDownloadTasks,
+}));
+
 vi.mock("@/hooks/use-platform", () => ({
   usePlatform: () => ({ browser: { showDownloadDialog: vi.fn() } }),
 }));
@@ -43,6 +48,7 @@ describe("BrowserViewPanel direct download", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     mocks.createDownloadTasks.mockResolvedValue([{ id: 17 }]);
+    mocks.createDockerDownloadTasks.mockResolvedValue([{ id: 18 }]);
     useBrowserStore.getState().reset();
     useBrowserStore.getState().hydrateSnapshot({
       tabs: [
@@ -158,5 +164,31 @@ describe("BrowserViewPanel direct download", () => {
 
     await act(async () => resolve([{ id: 17 }]));
     expect(button?.disabled).toBe(false);
+  });
+
+  it("adds the selected source to Docker via the dedicated action and label", async () => {
+    await act(async () => {
+      useAppStore.setState({ enableDocker: true });
+    });
+
+    const button = [...container.querySelectorAll("button")].find(
+      (candidate) => candidate.getAttribute("aria-label") === "addToDocker",
+    );
+    expect(button).toBeDefined();
+
+    await act(async () => {
+      button?.click();
+    });
+
+    expect(mocks.createDockerDownloadTasks).toHaveBeenCalledWith([
+      {
+        url: "https://cdn.example.test/video.mp4",
+        name: "1905 video",
+        headers: undefined,
+        type: DownloadType.mp4,
+        folder: "",
+      },
+    ]);
+    expect(mocks.toastSuccess).toHaveBeenCalledWith("addToDockerSuccess");
   });
 });

@@ -219,7 +219,11 @@ export const BrowserSettingsCard = memo(function BrowserSettingsCard() {
       });
       if (!contents?.length) return;
       const favorites = JSON.parse(contents[0]);
-      if (Array.isArray(favorites)) await importFavorites(favorites);
+      if (!Array.isArray(favorites)) {
+        toast.error(t("importFavoriteFailed"));
+        return;
+      }
+      await importFavorites(favorites);
       toast.success(t("importFavoriteSuccess"));
     } catch {
       toast.error(t("importFavoriteFailed"));

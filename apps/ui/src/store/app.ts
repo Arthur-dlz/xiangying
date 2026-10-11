@@ -68,6 +68,11 @@ export const useAppStore = create<AppStore & Actions>()(
         name: "appstore-storage",
         version: 1,
         migrate: migrateAppStore,
+        // mcpToken is re-fetched from the Core on boot (applyInitialConfig), so
+        // there is no need to persist this credential in localStorage. apiKey is
+        // intentionally kept: the web UI relies on it surviving reloads for
+        // login-state recovery.
+        partialize: ({ mcpToken: _mcpToken, ...persisted }) => persisted,
       },
     ),
   ),

@@ -13,7 +13,7 @@ export const useShareIntentQueueStore = create<ShareIntentQueueState>(
   (set) => ({
     pending: [],
     enqueue: (intents) => {
-      const fresh = intents.filter(isFreshShareIntent);
+      const fresh = intents.filter((intent) => isFreshShareIntent(intent));
       if (fresh.length === 0) return;
 
       set((state) => {
