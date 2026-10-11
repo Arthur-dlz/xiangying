@@ -251,7 +251,14 @@ function handleRequest(
 async function loadAssets(): Promise<Map<string, LoadedAsset>> {
   const loaded = await Promise.all(
     [...FILE_ROUTES].map(async ([route, definition]) => {
-      const body = await readFile(path.join(PUBLIC_ROOT, definition.path));
+      const body = await readFile(
+        path.join(PUBLIC_ROOT, definition.path),
+      ).catch((error: unknown) => {
+        throw new Error(
+          `Failed to load media fixture ${definition.path} for route ${route}`,
+          { cause: error },
+        );
+      });
       const sha256 = createHash("sha256").update(body).digest("hex");
       return [
         route,

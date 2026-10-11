@@ -3,7 +3,14 @@
 const fs = require("node:fs");
 
 const observerFile = process.env.XIANGYING_UPDATE_EGRESS_OBSERVER_FILE;
-const corePort = Number(process.env.MEDIAGO_CORE_PORT || 39939);
+const configuredCorePort = Number(process.env.MEDIAGO_CORE_PORT);
+// A non-numeric MEDIAGO_CORE_PORT would otherwise make String(corePort) "NaN",
+// silently failing every ownership comparison and blocking the core's own
+// traffic. Fall back to the default when the value is not a positive integer.
+const corePort =
+  Number.isInteger(configuredCorePort) && configuredCorePort > 0
+    ? configuredCorePort
+    : 39939;
 const state = {
   version: 1,
   armed: false,
@@ -48,11 +55,14 @@ function requestUrl(args, scheme) {
   if (first && typeof first === "object") {
     if (typeof first.url === "string") return new URL(first.url);
     const protocol = first.protocol || scheme;
-    const hostname = first.hostname;
-    const host = hostname || first.host || "localhost";
-    const port = hostname && first.port ? `:${first.port}` : "";
+    // `hostname` never carries a port; `host` may already embed one
+    // (e.g. "127.0.0.1:39939"). Parse first, then override the port so an
+    // explicit `port` never double-appends.
+    const host = first.hostname || first.host || "localhost";
     const pathname = first.path || first.pathname || "/";
-    return new URL(`${protocol}//${host}${port}${pathname}`);
+    const url = new URL(`${protocol}//${host}${pathname}`);
+    if (first.port) url.port = String(first.port);
+    return url;
   }
   return new URL(`${scheme}//invalid/`);
 }
@@ -71,7 +81,14 @@ function guardRequest(target, key, counter, scheme) {
     throw new Error(`observer-missing-${counter}`);
   }
   target[key] = function (...args) {
-    const url = requestUrl(args, scheme);
+    let url;
+    try {
+      url = requestUrl(args, scheme);
+    } catch {
+      // Unparseable target: count and block it rather than leaking a TypeError.
+      record(counter, true);
+      throw new Error("external request blocked by Xiangying closure observer");
+    }
     if (isOwnedCoreRequest(url)) return original.apply(this, args);
     record(counter, true);
     throw new Error("external request blocked by Xiangying closure observer");
@@ -96,7 +113,15 @@ if (process.versions.electron && process.type === "browser") {
         input && typeof input === "object" && "url" in input
           ? input.url
           : input;
-      const url = requestUrl([request], "https:");
+      let url;
+      try {
+        url = requestUrl([request], "https:");
+      } catch {
+        record("nodeFetch", true);
+        return Promise.reject(
+          new Error("external request blocked by Xiangying closure observer"),
+        );
+      }
       if (isOwnedCoreRequest(url))
         return originalFetch.call(this, input, ...args);
       record("nodeFetch", true);
@@ -116,7 +141,15 @@ if (process.versions.electron && process.type === "browser") {
         input && typeof input === "object" && "url" in input
           ? input.url
           : input;
-      const url = requestUrl([request], "https:");
+      let url;
+      try {
+        url = requestUrl([request], "https:");
+      } catch {
+        record("electronNetFetch", true);
+        return Promise.reject(
+          new Error("external request blocked by Xiangying closure observer"),
+        );
+      }
       if (isOwnedCoreRequest(url))
         return originalNetFetch.call(this, input, ...args);
       record("electronNetFetch", true);

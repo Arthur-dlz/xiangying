@@ -17,6 +17,9 @@ export interface RegressionSettingsRuntime {
 }
 
 export async function createRegressionSettingsRuntime(): Promise<RegressionSettingsRuntime> {
+  // `mkdtemp` does not create missing parents; ensure the evidence root exists
+  // so this works on a clean checkout where nothing created it yet.
+  await mkdir(SETTINGS_EVIDENCE_ROOT, { recursive: true });
   const runtimeRoot = await mkdtemp(
     path.join(SETTINGS_EVIDENCE_ROOT, "profile-"),
   );

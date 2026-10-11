@@ -203,6 +203,11 @@ export function installElectronNetworkPolicy({
   };
   policyGlobal.__mediagoE2eElectronNetworkPolicy = state;
 
+  // This function is serialized by `electronApp.evaluate`, so the module-scope
+  // `CORE_PORT` above is NOT captured in the Electron main process. Derive it
+  // here (the main process inherits the launch env) to avoid a ReferenceError.
+  const corePort = process.env.MEDIAGO_CORE_PORT?.trim() || "39719";
+
   session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
     let url: URL;
     try {
@@ -254,7 +259,7 @@ export function installElectronNetworkPolicy({
         (first === 10 ||
           (first === 172 && second >= 16 && second <= 31) ||
           (first === 192 && second === 168));
-      if (privateIPv4 && url.port === CORE_PORT) {
+      if (privateIPv4 && url.port === corePort) {
         state.provisionalRequestCount =
           (state.provisionalRequestCount ?? 0) + 1;
         if (state.provisionalOrigin === null) {
@@ -284,6 +289,9 @@ export function tightenElectronNetworkPolicy(
   const state = (globalThis as ElectronPolicyGlobal)
     .__mediagoE2eElectronNetworkPolicy;
   if (!state) throw new Error("Electron network policy is not installed");
+  // Serialized via `electronApp.evaluate`, so the module-scope `CORE_PORT` is
+  // not available here — re-derive it from the (inherited) launch env.
+  const corePort = process.env.MEDIAGO_CORE_PORT?.trim() || "39719";
   let url: URL;
   try {
     url = new URL(coreOrigin);
@@ -312,11 +320,11 @@ export function tightenElectronNetworkPolicy(
   if (
     !validProtocol ||
     (!loopback.has(url.hostname) && !privateIPv4) ||
-    url.port !== CORE_PORT ||
+    url.port !== corePort ||
     url.origin !== coreOrigin
   ) {
     throw new Error(
-      `Owned Core origin must be an exact loopback/private IPv4 HTTP(S) origin on port ${CORE_PORT}: ${coreOrigin}`,
+      `Owned Core origin must be an exact loopback/private IPv4 HTTP(S) origin on port ${corePort}: ${coreOrigin}`,
     );
   }
   state.coreOrigin = url.origin;
