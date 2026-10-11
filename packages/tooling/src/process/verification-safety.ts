@@ -48,7 +48,7 @@ interface WindowsCleanupOptions {
 function redactLine(value: string): string {
   return value
     .replace(
-      /(\b(?:authorization|proxy-authorization|cookie|x-api-key|[a-z0-9_]*(?:token|secret|password|api_key)[a-z0-9_]*)\s*[:=]\s*)[^\r\n]*/gi,
+      /(\b(?:authorization|proxy-authorization|cookie|x-api-key|[a-z0-9_]*(?:token|secret|password|api_key)[a-z0-9_]*)["']?\s*[:=]\s*)[^\r\n]*/gi,
       "$1[REDACTED]",
     )
     .replace(

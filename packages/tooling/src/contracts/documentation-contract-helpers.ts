@@ -79,6 +79,18 @@ function extractHtmlCodeBlocks(
             bodyStart: state.bodyStart,
             preStart: state.preStart,
           };
+        } else if (tag.closing && tag.name === "pre") {
+          // Malformed input: a closing </pre> arrived without a preceding
+          // </code>. Emit the body collected so far and leave the code state,
+          // otherwise every later <pre><code> block would be silently skipped.
+          blocks.push({
+            body: decodeHtmlEntities(
+              stripHtmlTags(source.slice(state.bodyStart, tagStart)),
+            ),
+            index: state.preStart,
+            range: [state.preStart, tagEnd + 1],
+          });
+          state = { kind: "outside" };
         }
       } else if (tag.closing && tag.name === "pre") {
         blocks.push({

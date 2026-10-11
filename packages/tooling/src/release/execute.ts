@@ -187,6 +187,15 @@ export function executeReleaseVersion(
 
 export function formatOutputs(outputs: Record<string, string>): string {
   return Object.entries(outputs)
-    .map(([key, value]) => `${key}=${value}`)
+    .map(([key, value]) => {
+      if (!value.includes("\n")) return `${key}=${value}`;
+      // Multiline values must use the heredoc form. Pick a delimiter that
+      // cannot collide with the value, otherwise it could terminate the
+      // heredoc early and inject extra GITHUB_OUTPUT lines.
+      const lines = value.split("\n");
+      let delimiter = "EOF";
+      while (lines.includes(delimiter)) delimiter += "_";
+      return `${key}<<${delimiter}\n${value}\n${delimiter}`;
+    })
     .join("\n");
 }

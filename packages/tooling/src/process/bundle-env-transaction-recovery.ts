@@ -18,6 +18,7 @@ import {
   hashBytes,
   isErrno,
   recoveryError,
+  restoreCapturedWithoutClobber,
   sameIdentity,
   snapshotRegularFile,
   transactionArtifacts,
@@ -69,7 +70,20 @@ async function restoreOriginal(
   }
 
   if (originalCapture) {
-    await fs.rename(state.artifacts.originalCapturePath, state.targetPath);
+    // Restore without clobbering: hard-link the captured original into place
+    // (failing if a concurrent file appeared) instead of an unconditional
+    // rename that would silently overwrite it.
+    const restoredWithoutClobber = await restoreCapturedWithoutClobber(
+      state.artifacts.originalCapturePath,
+      state.targetPath,
+      originalCapture,
+    );
+    if (!restoredWithoutClobber) {
+      throw recoveryError(
+        state,
+        "A concurrent file appeared while restoring; no file was overwritten.",
+      );
+    }
   } else {
     try {
       await fs.link(state.artifacts.backupPath, state.targetPath);
@@ -219,13 +233,15 @@ export async function recoverExistingTransaction(
   }
   const artifacts = transactionArtifacts(targetPath, journal.id);
   const original = await recoveryOriginal(targetPath, artifacts, journal);
+  if (journal.originalExists && !original) {
+    throw new Error(
+      `Cannot recover bundle verification: the original environment could not be located. Lock: ${lockPath}; backup: ${artifacts.backupPath}`,
+    );
+  }
   const injectedBytes = buildInjectedEnvironmentBytes(
     original?.bytes ?? Buffer.alloc(0),
   );
-  if (
-    (!journal.originalExists || original) &&
-    hashBytes(injectedBytes) !== journal.injectedHash
-  ) {
+  if (hashBytes(injectedBytes) !== journal.injectedHash) {
     throw new Error(
       `Cannot recover bundle verification: journal hash mismatch. Lock: ${lockPath}; backup: ${artifacts.backupPath}`,
     );

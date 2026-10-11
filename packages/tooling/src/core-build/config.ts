@@ -13,7 +13,6 @@ export const config = {
   BIN_DIR: "./bin",
   RELEASE_DIR: "./release",
   DEPS_DIR: join("..", "..", ".deps"),
-  TOOLS_BIN_DIR: join("..", "..", ".deps"),
   WORKSPACE_DIR: join("..", ".."),
   GO_LDFLAGS: "-s -w",
   MAIN_UI_BUILD_DIR: join("..", "ui", "build", "server"),

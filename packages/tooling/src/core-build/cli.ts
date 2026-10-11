@@ -1,4 +1,5 @@
-import { pathToFileURL } from "node:url";
+import { resolve as resolvePath } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export const CORE_BUILD_COMMANDS = [
   "dev",
@@ -64,15 +65,22 @@ export async function runCoreBuildCommand(
     case "release":
       await operations.releasePackageFull();
       return;
+    default:
+      throw new Error(`Unhandled Core build command: ${String(command)}`);
   }
 }
 
 function isMainModule(): boolean {
   const entrypoint = process.argv[1];
-  return (
-    entrypoint !== undefined &&
-    import.meta.url === pathToFileURL(entrypoint).href
-  );
+  if (entrypoint === undefined) return false;
+  // Compare resolved filesystem paths instead of raw file URLs: on Windows
+  // process.argv[1] can differ from import.meta.url in drive-letter casing,
+  // percent-encoding or symlink target, which made this check silently fail.
+  const modulePath = fileURLToPath(import.meta.url);
+  const entryPath = resolvePath(entrypoint);
+  return process.platform === "win32"
+    ? modulePath.toLowerCase() === entryPath.toLowerCase()
+    : modulePath === entryPath;
 }
 
 if (isMainModule()) {

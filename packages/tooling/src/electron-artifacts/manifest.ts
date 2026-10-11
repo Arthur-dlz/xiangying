@@ -168,6 +168,8 @@ export function releaseAssetName(url: string, source: string): string {
   }
   if (
     decoded.length === 0 ||
+    decoded === "." ||
+    decoded === ".." ||
     decoded.includes("\\") ||
     path.posix.basename(decoded) !== decoded
   ) {

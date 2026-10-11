@@ -59,6 +59,15 @@ function getUpdateChannel(
 
 const updateChannel = getUpdateChannel(pkg.version);
 
+// Single source of truth for the artifact output directory, shared by the
+// electron-builder config and the macOS verification step. electron-builder
+// resolves a relative `directories.output` against the app directory, so a
+// relative MEDIAGO_RELEASE_DIR is resolved the same way here.
+function resolveReleaseDirectory(): string {
+  const configured = process.env.MEDIAGO_RELEASE_DIR?.trim();
+  return path.resolve(appRoot, configured || "release");
+}
+
 function getReleaseConfig(): Configuration {
   return {
     asar: true,
@@ -82,7 +91,7 @@ function getReleaseConfig(): Configuration {
     artifactName: "xiangying-setup-${platform}-${arch}-${buildVersion}.${ext}",
     npmRebuild: true,
     directories: {
-      output: process.env.MEDIAGO_RELEASE_DIR?.trim() || "./release",
+      output: resolveReleaseDirectory(),
     },
     // Always generate updater metadata, but never let the platform matrix
     // publish on its own. The release workflow uploads every platform from a
@@ -325,7 +334,7 @@ const artifacts = await build({
 
 if (macOSSigning.enabled) {
   verifyMacOSDistributionArtifacts({
-    releaseDirectory: path.resolve(appRoot, "release"),
+    releaseDirectory: resolveReleaseDirectory(),
     artifacts,
   });
 }

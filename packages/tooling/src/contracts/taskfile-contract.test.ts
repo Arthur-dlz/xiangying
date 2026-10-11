@@ -1543,6 +1543,14 @@ pnpm run \\
     ).toEqual([]);
   });
 
+  it("still extracts a code block whose </pre> arrives without </code>", () => {
+    // A stray </pre> used to leave the parser stuck inside-code, so the
+    // malformed block's own command was silently dropped.
+    expect(
+      migratedPnpmCommandsInCodeBlocks("<pre><code>pnpm dev:web</pre>"),
+    ).toEqual(["pnpm dev:web"]);
+  });
+
   it.each([
     [
       "PowerShell LF continuation",

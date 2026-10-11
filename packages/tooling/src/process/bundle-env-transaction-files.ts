@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -92,11 +93,26 @@ export async function snapshotRegularFile(
   if (!stat.isFile()) {
     throw new Error(`${label} must be a regular file: ${filename}`);
   }
-  return {
-    bytes: await fs.readFile(filename),
-    identity: identityOf(stat),
-    mode: stat.mode & 0o777,
-  };
+  // Read identity and contents from a single handle opened with O_NOFOLLOW so
+  // the target cannot be swapped for a symlink or a different file between the
+  // lstat above and the read.
+  const handle = await fs.open(
+    filename,
+    fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW,
+  );
+  try {
+    const descriptorStat = await handle.stat();
+    if (!descriptorStat.isFile()) {
+      throw new Error(`${label} must be a regular file: ${filename}`);
+    }
+    return {
+      bytes: await handle.readFile(),
+      identity: identityOf(descriptorStat),
+      mode: descriptorStat.mode & 0o777,
+    };
+  } finally {
+    await handle.close();
+  }
 }
 
 export function transactionArtifacts(

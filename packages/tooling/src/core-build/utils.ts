@@ -60,6 +60,21 @@ export interface RunCommandOptions {
   cwd?: string;
 }
 
+// cmd.exe metacharacters that can break out of an argument or trigger
+// expansions. When spawning with `shell: true` on Windows, Node joins the
+// command and args with spaces without escaping, so every argument must be
+// quoted and have these characters caret-escaped to prevent command injection.
+const WINDOWS_SHELL_META = /([()\][%!^"`<>&|;, *?])/g;
+
+function escapeWindowsArgument(argument: string): string {
+  // Backslash runs immediately before a quote (or at the end) are doubled so
+  // the trailing `\"` parses as an escaped quote rather than a path separator.
+  const quoted = `"${argument
+    .replace(/(\\*)"/g, '$1$1\\"')
+    .replace(/(\\*)$/, "$1$1")}"`;
+  return quoted.replace(WINDOWS_SHELL_META, "^$1");
+}
+
 const childProcesses = new Set<ChildProcess>();
 let cleanupRegistered = false;
 
@@ -111,11 +126,9 @@ export async function runCommand(
 
   return new Promise((resolve, reject) => {
     const isWindows = process.platform === "win32";
-    // On Windows with shell mode, args containing spaces must be quoted
-    // because Node.js joins them with spaces without escaping
-    const escapedArgs = isWindows
-      ? args.map((arg) => (arg.includes(" ") ? `"${arg}"` : arg))
-      : args;
+    // On Windows with shell mode, Node joins args with spaces without
+    // escaping; quote and caret-escape each one to avoid shell injection.
+    const escapedArgs = isWindows ? args.map(escapeWindowsArgument) : args;
 
     const child = spawn(command, escapedArgs, {
       cwd: options.cwd,

@@ -67,6 +67,11 @@ export async function collectElectronArtifacts(
 ): Promise<string[]> {
   const input = path.resolve(inputDirectory);
   const output = path.resolve(outputDirectory);
+  if (output === input || input.startsWith(output + path.sep)) {
+    throw new Error(
+      `Output directory ${output} must not contain the input directory ${input}`,
+    );
+  }
   await rm(output, { recursive: true, force: true });
   await mkdir(output, { recursive: true });
 

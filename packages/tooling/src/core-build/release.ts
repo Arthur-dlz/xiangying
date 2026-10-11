@@ -101,7 +101,10 @@ async function packagePlatform(cfg: BuildConfig) {
   const ext = getTargetExt(cfg.goos);
   const pkgName = getPackageName(cfg);
   const pkgDir = resolveReleasePath(releaseConfig.packagesDir, pkgName);
-  const toolsSrc = join(config.TOOLS_BIN_DIR, cfg.platform!, cfg.arch!);
+  // Runtime deps are laid out as `.deps/<platform>-<arch>` (see devConfig's
+  // `deps_dir` and electron/build.ts). Joining platform/arch as separate path
+  // segments would resolve to `.deps/win32/x64`, which never exists.
+  const toolsSrc = join(config.DEPS_DIR, `${cfg.platform}-${cfg.arch}`);
 
   // Create directory structure
   mkdir(pkgDir);

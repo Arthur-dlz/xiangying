@@ -9,7 +9,7 @@
  * (or `pnpm pack:extension` which chains both).
  */
 
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,18 +36,25 @@ function readVersion(): string {
   return pkg.version ?? "0.0.0";
 }
 
+function quotePowerShell(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`;
+}
+
 function zipDirectory(sourceDir: string, outputZip: string): void {
   // Make sure any stale zip at the target path is gone — Windows'
   // Compress-Archive refuses to overwrite silently.
   if (existsSync(outputZip)) rmSync(outputZip);
 
   if (process.platform === "win32") {
-    const ps = `Compress-Archive -Path '${sourceDir}\\*' -DestinationPath '${outputZip}' -Force`;
-    execSync(`powershell -NoProfile -Command "${ps}"`, { stdio: "inherit" });
+    const ps = `Compress-Archive -Path ${quotePowerShell(`${sourceDir}\\*`)} -DestinationPath ${quotePowerShell(outputZip)} -Force`;
+    execFileSync("powershell", ["-NoProfile", "-Command", ps], {
+      stdio: "inherit",
+    });
   } else {
     // -r recursive, run inside sourceDir so paths are relative, use -q
     // to silence per-file output.
-    execSync(`cd "${sourceDir}" && zip -r -q "${outputZip}" .`, {
+    execFileSync("zip", ["-r", "-q", outputZip, "."], {
+      cwd: sourceDir,
       stdio: "inherit",
     });
   }

@@ -251,6 +251,28 @@ test("rejects updater URLs that are not release filenames", async () => {
   ).rejects.toThrow(/updater URL must be a release asset filename/);
 });
 
+test.each([".", "..", "%2e%2e"])(
+  "rejects updater URL that resolves to dot segment %s",
+  async (url) => {
+    const root = await mkdtemp(path.join(tmpdir(), "mediago-electron-dotseg-"));
+    onTestFinished(() => rm(root, { recursive: true, force: true }));
+
+    const input = path.join(root, "input");
+    const release = await createCompleteRelease(input, "3.6.0", "latest");
+
+    await writeFile(
+      path.join(release.linux, "latest-linux.yml"),
+      manifest([{ ...release.linuxEntry, url }], "3.6.0"),
+    );
+    await expect(
+      collectElectronArtifacts(input, path.join(root, "output"), {
+        version: "3.6.0",
+        channel: "latest",
+      }),
+    ).rejects.toThrow(/updater URL must be a release asset filename/);
+  },
+);
+
 test("rejects incorrect declared asset sizes", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "mediago-electron-size-"));
   onTestFinished(() => rm(root, { recursive: true, force: true }));
