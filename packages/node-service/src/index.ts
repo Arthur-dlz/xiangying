@@ -96,6 +96,7 @@ export class ServiceRunner extends EventEmitter<ServiceRunnerEvents> {
   // taskkill tree root until cleanup has completed or reported failure.
   private ownedProcessPid: number | undefined;
   private stopping: Promise<void> | null = null;
+  private starting: Promise<ServiceRunnerState> | null = null;
   private readonly runtimeState: ServiceRunnerState;
   private readonly binaryPath: string;
   private preferredPort?: number;
@@ -152,9 +153,27 @@ export class ServiceRunner extends EventEmitter<ServiceRunnerEvents> {
   }
 
   /**
-   * Start the service.
+   * Start the service. Overlapping calls share a single in-flight attempt so
+   * two children can never be spawned concurrently (the second would otherwise
+   * overwrite `childProcess` and orphan the first).
    */
   async start(): Promise<ServiceRunnerState> {
+    if (this.starting) {
+      return this.starting;
+    }
+    const tracked = this.performStart().finally(() => {
+      if (this.starting === tracked) {
+        this.starting = null;
+      }
+    });
+    this.starting = tracked;
+    return tracked;
+  }
+
+  /**
+   * Run the actual start sequence; only ever entered through `start()`.
+   */
+  private async performStart(): Promise<ServiceRunnerState> {
     if (this.isRunning()) {
       return this.getState();
     }
@@ -282,6 +301,16 @@ export class ServiceRunner extends EventEmitter<ServiceRunnerEvents> {
       this.applyConfigurationUpdates(updates);
     } else {
       this.refreshBaseEnvironment();
+    }
+
+    // Let any in-flight start settle first; otherwise the `start()` below would
+    // simply return that (about-to-be-superseded) attempt.
+    if (this.starting) {
+      try {
+        await this.starting;
+      } catch {
+        // Superseded or failed; the fresh start below will retry.
+      }
     }
 
     await this.stop();

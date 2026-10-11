@@ -206,28 +206,51 @@ export default function PlayerPage() {
     };
   }, [calculateAndSetPlayerSize, hasVideos]);
 
+  // Auto-select only once per player instance: a later `videoList` change (SWR
+  // revalidation / retry) must not reset whatever the user is watching, while a
+  // recreated player (error -> retry) still auto-selects again.
+  const autoSelectedPlayerRef = useRef<Player | null>(null);
+  const userSelectedRef = useRef(false);
+
   useEffect(() => {
-    if (!playerRef.current) return;
+    const player = playerRef.current;
+    if (!player) return;
+    if (autoSelectedPlayerRef.current === player) return;
+    autoSelectedPlayerRef.current = player;
 
     // Check for ?id= query parameter to auto-play a specific video by task ID
     const params = new URLSearchParams(window.location.search);
     const targetId = params.get("id");
 
+    let cancelled = false;
+
     if (targetId) {
       getVideoById(Number(targetId))
         .then((video) => {
+          // Ignore a late resolution superseded by unmount or a user choice.
+          if (cancelled || userSelectedRef.current) return;
           if (video?.url) {
             changeVideoAndPlay(video.url, video.mimeType);
           }
         })
         .catch(() => {
+          if (cancelled || userSelectedRef.current) return;
           // Fallback to first video in list
           if (Array.isArray(videoList) && videoList.length > 0) {
             const v = videoList[0];
             changeVideoAndPlay(v.url, v.mimeType);
           }
         });
-      return;
+      return () => {
+        // Only invalidate the in-flight request when the player instance itself
+        // is gone (unmount / recreation). A plain `videoList` revalidation
+        // re-runs this effect but returns early above, so cancelling here would
+        // silently drop the `?id=` deep-link request with nobody left to
+        // re-issue it.
+        if (playerRef.current !== player) {
+          cancelled = true;
+        }
+      };
     }
 
     // Default: play the first video in the list
@@ -238,6 +261,7 @@ export default function PlayerPage() {
   }, [videoList, changeVideoAndPlay]);
 
   const handleVideoClick = useMemoizedFn((video: VideoItem) => {
+    userSelectedRef.current = true;
     changeVideoAndPlay(video.url, video.mimeType);
     setOpen(false);
   });

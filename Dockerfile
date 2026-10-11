@@ -96,10 +96,9 @@ COPY --from=go-builder /out/mediago-core /usr/local/bin/mediago-core
 ARG TARGETARCH
 COPY --from=node-builder /src/.deps/linux-* /app/deps-tmp/
 RUN mkdir -p /app/deps && \
-    if [ -d /app/deps-tmp ]; then \
-      find /app/deps-tmp -type f -exec cp {} /app/deps/ \; ; \
-    fi && \
-    chmod +x /app/deps/* 2>/dev/null || true && \
+    find /app/deps-tmp -type f -exec cp {} /app/deps/ \; && \
+    test -n "$(ls -A /app/deps)" && \
+    chmod +x /app/deps/* && \
     rm -rf /app/deps-tmp
 
 COPY THIRD_PARTY_NOTICES.md /app/THIRD_PARTY_NOTICES.md

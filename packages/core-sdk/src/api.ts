@@ -26,8 +26,18 @@ export function createApiClient(baseURL: string): AxiosInstance {
     (error: AxiosError) => {
       // For error responses, parse and throw a new error.
       if (error.response) {
-        const apiError = error.response.data as { message?: string };
-        const errorMessage = apiError.message || error.message;
+        // `error.response.data` is unvalidated: it may be null, a string or
+        // non-JSON, so guard the shape before reading `.message` (a null/undefined
+        // body would otherwise throw a TypeError and mask the real failure).
+        const data: unknown = error.response.data;
+        const apiMessage =
+          data !== null &&
+          typeof data === "object" &&
+          "message" in data &&
+          typeof (data as { message?: unknown }).message === "string"
+            ? (data as { message: string }).message
+            : undefined;
+        const errorMessage = apiMessage || error.message;
         return Promise.reject(new Error(`API request failed: ${errorMessage}`));
       }
       return Promise.reject(error);

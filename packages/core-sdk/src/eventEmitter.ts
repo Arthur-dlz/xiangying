@@ -18,7 +18,7 @@ type InternalEventMap = TaskEventMap & {
   [key: number]: unknown;
   [key: symbol]: unknown;
 };
-type HandlerStore = Map<Function, MittHandler<unknown>>;
+type HandlerStore = Map<Function, Set<MittHandler<unknown>>>;
 
 interface MessageEventLike {
   readonly data?: unknown;
@@ -56,10 +56,10 @@ export class TaskStreamEventEmitter implements TaskEventEmitter {
     eventName: TEventName,
     listener: (payload: TaskEventMap[TEventName]) => void,
   ): this {
-    const handler = this.untrackHandler(eventName, listener) as
-      | MittHandler<InternalEventMap[TEventName]>
-      | undefined;
-    if (handler) {
+    const handlers = this.untrackHandler(eventName, listener) as Array<
+      MittHandler<InternalEventMap[TEventName]>
+    >;
+    for (const handler of handlers) {
       this.emitter.off(eventName, handler);
     }
     return this;
@@ -70,7 +70,10 @@ export class TaskStreamEventEmitter implements TaskEventEmitter {
     listener: (payload: TaskEventMap[TEventName]) => void,
   ): this {
     const wrapped: MittHandler<InternalEventMap[TEventName]> = (payload) => {
-      this.off(eventName, listener);
+      // Detach only this wrapped handler, so a separate `on(eventName, listener)`
+      // registration for the same listener is not removed by mistake.
+      this.untrackHandlerInstance(eventName, listener, wrapped);
+      this.emitter.off(eventName, wrapped);
       listener(payload);
     };
     this.trackHandler(eventName, listener, wrapped);
@@ -94,8 +97,10 @@ export class TaskStreamEventEmitter implements TaskEventEmitter {
       if (!handlers) {
         return this;
       }
-      for (const handler of handlers.values()) {
-        this.emitter.off(eventName, handler as MittHandler<any>);
+      for (const registered of handlers.values()) {
+        for (const handler of registered) {
+          this.emitter.off(eventName, handler as MittHandler<any>);
+        }
       }
       handlers.clear();
       this.handlerMap.delete(eventName);
@@ -103,8 +108,10 @@ export class TaskStreamEventEmitter implements TaskEventEmitter {
     }
 
     for (const [evtName, handlers] of this.handlerMap.entries()) {
-      for (const handler of handlers.values()) {
-        this.emitter.off(evtName, handler as MittHandler<any>);
+      for (const registered of handlers.values()) {
+        for (const handler of registered) {
+          this.emitter.off(evtName, handler as MittHandler<any>);
+        }
       }
       handlers.clear();
     }
@@ -190,29 +197,69 @@ export class TaskStreamEventEmitter implements TaskEventEmitter {
     listener: (payload: TaskEventMap[TEventName]) => void,
     handler: MittHandler<InternalEventMap[TEventName]>,
   ): void {
-    if (!this.handlerMap.has(eventName)) {
-      this.handlerMap.set(eventName, new Map());
+    let store = this.handlerMap.get(eventName);
+    if (!store) {
+      store = new Map();
+      this.handlerMap.set(eventName, store);
     }
-    this.handlerMap
-      .get(eventName)!
-      .set(listener as unknown as Function, handler as MittHandler<unknown>);
+    const key = listener as unknown as Function;
+    let registered = store.get(key);
+    if (!registered) {
+      registered = new Set();
+      store.set(key, registered);
+    }
+    registered.add(handler as MittHandler<unknown>);
   }
 
+  /**
+   * Detach every handler registered for `listener` (a listener may be
+   * registered more than once via `on`/`once`) and return them so the caller
+   * can unsubscribe each one from the underlying emitter.
+   */
   private untrackHandler<TEventName extends TaskEventName>(
     eventName: TEventName,
     listener: (payload: TaskEventMap[TEventName]) => void,
-  ): MittHandler<unknown> | undefined {
-    const handlers = this.handlerMap.get(eventName);
-    if (!handlers) {
-      return undefined;
+  ): MittHandler<unknown>[] {
+    const store = this.handlerMap.get(eventName);
+    if (!store) {
+      return [];
     }
-    const handler = handlers.get(listener as unknown as Function);
-    if (handler) {
-      handlers.delete(listener as unknown as Function);
-      if (handlers.size === 0) {
+    const key = listener as unknown as Function;
+    const registered = store.get(key);
+    if (!registered) {
+      return [];
+    }
+    store.delete(key);
+    if (store.size === 0) {
+      this.handlerMap.delete(eventName);
+    }
+    return [...registered];
+  }
+
+  /**
+   * Detach a single handler (used by `once` so it removes only its own wrapper
+   * without touching other registrations for the same listener).
+   */
+  private untrackHandlerInstance<TEventName extends TaskEventName>(
+    eventName: TEventName,
+    listener: (payload: TaskEventMap[TEventName]) => void,
+    handler: MittHandler<InternalEventMap[TEventName]>,
+  ): void {
+    const store = this.handlerMap.get(eventName);
+    if (!store) {
+      return;
+    }
+    const key = listener as unknown as Function;
+    const registered = store.get(key);
+    if (!registered) {
+      return;
+    }
+    registered.delete(handler as MittHandler<unknown>);
+    if (registered.size === 0) {
+      store.delete(key);
+      if (store.size === 0) {
         this.handlerMap.delete(eventName);
       }
     }
-    return handler;
   }
 }

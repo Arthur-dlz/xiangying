@@ -7,7 +7,9 @@ export function getFileExtension(url: string): string {
   try {
     const urlObj = new URL(url);
     const pathname = urlObj.pathname;
-    const extension = pathname.split(".").pop() || "";
+    const lastSegment = pathname.split("/").pop() || "";
+    const dotIndex = lastSegment.lastIndexOf(".");
+    const extension = dotIndex > 0 ? lastSegment.slice(dotIndex + 1) : "";
     return extension.toLowerCase();
   } catch {
     return "";

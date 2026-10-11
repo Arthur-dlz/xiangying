@@ -234,6 +234,28 @@ describe("ServiceRunner", () => {
     expect(runner.isRunning()).toBe(false);
   });
 
+  test("shares one in-flight attempt when start() is called concurrently", async () => {
+    const ServiceRunner = await loadServiceRunnerWithAvailablePort();
+    const fixture = getExecutableFixture();
+
+    const runner = new ServiceRunner({
+      executableDir: fixture.dir,
+      executableName: fixture.name,
+      preferredPort: 4_322,
+    });
+    onTestFinished(() => runner.stop().catch(() => undefined));
+
+    const [first, second] = await Promise.all([runner.start(), runner.start()]);
+
+    // A second concurrent start must not spawn a second child (which would
+    // overwrite `childProcess` and orphan the first one).
+    expect(spawnMock).toHaveBeenCalledTimes(1);
+    expect(first.port).toBe(4_322);
+    expect(second.port).toBe(4_322);
+    expect(second.started).toBe(true);
+    expect(runner.isRunning()).toBe(true);
+  });
+
   test("resolves host from LAN when internal flag is false", async () => {
     const ServiceRunner = await loadServiceRunnerWithAvailablePort();
     const fixture = getExecutableFixture();

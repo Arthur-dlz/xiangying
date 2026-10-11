@@ -29,6 +29,7 @@
   },
   "scripts": {
     "build": "tsdown",
+    "prepublishOnly": "tsdown",
     "dev": "tsdown --watch",
     "test": "pnpm --dir ../.. exec vitest run packages/core-sdk",
     "typecheck": "tsc --noEmit"

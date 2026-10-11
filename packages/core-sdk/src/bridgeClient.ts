@@ -51,7 +51,7 @@ export class MediaGoBridgeClient {
       return this.fetchImpl(url, {
         ...init,
         headers: {
-          ...init.headers,
+          ...Object.fromEntries(new Headers(init.headers).entries()),
           Authorization: `Bearer ${this.token}`,
         },
       }) as ReturnType<FetchLike>;

@@ -114,6 +114,45 @@ describe("MediaGoBridgeClient", () => {
     stream.close();
   });
 
+  it("preserves non-plain init headers (Headers instance) when adding the token", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    });
+    const client = new MediaGoBridgeClient({
+      token: "sentinel-token",
+      fetch: fetchMock,
+    });
+    const stream = client.connect();
+    const source = instances()[0];
+    expect(source).toBeDefined();
+    if (!source) throw new Error("missing EventSource instance");
+
+    // `RequestInit['headers']` is `HeadersInit`; EventSource supplies a
+    // `Headers` instance (e.g. `Last-Event-ID` for SSE reconnection), which a
+    // plain spread would silently drop.
+    const initHeaders = new Headers();
+    initHeaders.set("Last-Event-ID", "42");
+    initHeaders.set("X-Custom", "abc");
+
+    await source.options.fetch(source.url, { headers: initHeaders });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      source.url,
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          // `Headers` lower-cases field names.
+          "last-event-id": "42",
+          "x-custom": "abc",
+          Authorization: "Bearer sentinel-token",
+        }),
+      }),
+    );
+
+    stream.close();
+  });
+
   it("parses requested/cancelled commands, reports malformed data, and cleans up", () => {
     const client = new MediaGoBridgeClient({
       token: "sentinel-token",

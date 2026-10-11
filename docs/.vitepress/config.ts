@@ -167,7 +167,7 @@ export default defineConfig({
             isBlogPage,
             language,
           ),
-        }),
+        }).replace(/</g, "\\u003c"),
       ],
     ];
 
@@ -222,7 +222,7 @@ export default defineConfig({
       entries.push([
         "script",
         { type: "application/ld+json" },
-        JSON.stringify(article),
+        JSON.stringify(article).replace(/</g, "\\u003c"),
       ]);
 
       if (frontmatter.date) {
