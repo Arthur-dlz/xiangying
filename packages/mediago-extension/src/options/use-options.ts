@@ -221,10 +221,7 @@ export function useOptions(transport: OptionsTransport = runtimeTransport) {
   const test = useCallback(async () => {
     const validation = validateConnectionDraft(draft);
     if (validation) {
-      setLastStatus({
-        ok: false,
-        message: { key: "errors.serverUrlRequired" },
-      });
+      setLastStatus({ ok: false, message: validation });
       return;
     }
     const normalized = normalizeConnectionDraft(draft);

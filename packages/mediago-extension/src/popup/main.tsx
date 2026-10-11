@@ -12,7 +12,18 @@ import { App } from "./App";
 applySystemTheme();
 
 void (async () => {
-  const i18n = await bootstrapExtensionI18n();
+  let i18n: Awaited<ReturnType<typeof bootstrapExtensionI18n>>;
+  try {
+    i18n = await bootstrapExtensionI18n();
+  } catch (error) {
+    // eslint-disable-next-line no-console -- Popup bootstrap failures need a diagnostic sink.
+    console.error("Failed to bootstrap popup i18n", error);
+    const rootElement = document.getElementById("root");
+    if (rootElement) {
+      rootElement.textContent = "Failed to load the popup. Please try again.";
+    }
+    return;
+  }
   const rootElement = document.getElementById("root");
   if (!rootElement) throw new Error("Popup root element not found");
   const root = createRoot(rootElement);

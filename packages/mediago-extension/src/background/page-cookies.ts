@@ -11,7 +11,7 @@ function withCookieHeader(headers: string | undefined, cookie: string): string {
     .replace(/\r\n/g, "\n")
     .split("\n")
     .filter((header) => !/^\s*cookie\s*:/i.test(header));
-  retained.push(`Cookie: ${cookie}`);
+  retained.push(`Cookie: ${cookie.replace(/[\r\n]+/g, "")}`);
   return retained.filter(Boolean).join("\n");
 }
 

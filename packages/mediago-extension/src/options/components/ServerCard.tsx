@@ -1,4 +1,5 @@
 import { CheckCircle2, Loader2, Server, XCircle } from "lucide-react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "../../components/ui/badge";
@@ -200,7 +201,7 @@ export function ServerCard({
   );
 }
 
-function ModeNote({ children }: { children: React.ReactNode }) {
+function ModeNote({ children }: { children: ReactNode }) {
   return (
     <p className="rounded-lg border border-border bg-surface-subtle px-4 py-3 text-[13px] leading-5 text-muted-foreground">
       {children}

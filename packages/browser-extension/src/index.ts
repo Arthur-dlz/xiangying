@@ -15,7 +15,9 @@ if (adapter && !runtimeWindow[RUNTIME_CLEANUP_KEY]) {
     adapter,
     document,
     transport(candidate) {
-      window.electron.browser.showDownloadDialog([candidate]);
+      const bridge = window.electron?.browser;
+      if (!bridge) return;
+      bridge.showDownloadDialog([candidate]);
     },
   });
 

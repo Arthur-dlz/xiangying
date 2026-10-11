@@ -61,7 +61,7 @@ export function ImportBehaviourCard({
             <Label
               htmlFor="download-now"
               className={
-                available
+                available && !saving
                   ? "cursor-pointer"
                   : "cursor-not-allowed text-muted-foreground"
               }
@@ -81,7 +81,7 @@ export function ImportBehaviourCard({
             id="download-now"
             checked={available && settings.downloadNow}
             onCheckedChange={onDownloadNowChange}
-            disabled={!available}
+            disabled={!available || saving}
             aria-describedby="download-now-description"
           />
         </div>

@@ -66,6 +66,7 @@ export function LanguageCard({
                 key={option.value}
                 value={option.value}
                 title={option.title}
+                disabled={saving}
                 variant="compact"
               />
             ))}

@@ -28,9 +28,19 @@ export function installPageActionContentScript(
 
   activeContentScripts.set(windowTarget, cleanup);
   windowTarget.addEventListener("unload", cleanup);
-  void start().then((nextController) => {
-    if (disposed) nextController.destroy();
-    else controller = nextController;
-  }, cleanup);
+  void start().then(
+    (nextController) => {
+      if (disposed) nextController.destroy();
+      else controller = nextController;
+    },
+    (error) => {
+      // eslint-disable-next-line no-console -- Content-script init failures need a diagnostic sink.
+      console.error(
+        "[lifecycle] page action content script failed to start",
+        error,
+      );
+      cleanup();
+    },
+  );
   return cleanup;
 }

@@ -3,10 +3,14 @@ import type { ExtensionSettings } from "./types";
 /**
  * Desktop Go Core listen address in `desktop-http` mode.
  *
- * `39719` matches the Electron main process's hard-coded `preferredPort`
- * in `apps/electron/src/services/downloader.server.ts`. NOT the `9900`
- * used by Go Core in standalone web/server mode — those are two
- * different deployment shapes that happen to share the same binary.
+ * `39719` is the Electron main process's default `preferredPort` — see
+ * `resolveDesktopCorePort()` in `apps/electron/src/services/downloader.server.ts`.
+ * That helper honors the `MEDIAGO_CORE_PORT` env override (validated
+ * 1024–65535) and only falls back to `39719`. If a user sets that env var
+ * (or the default changes), this constant drifts out of sync and every
+ * `desktop-http` call silently fails. Keep the two in step manually.
+ * NOT the `9900` used by Go Core in standalone web/server mode — those are
+ * two different deployment shapes that happen to share the same binary.
  */
 export const DESKTOP_HTTP_BASE = "http://127.0.0.1:39719";
 

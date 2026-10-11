@@ -84,6 +84,7 @@ export function registerMessageRouter(
       .then(sendResponse)
       .catch((err) => {
         const messageType = (message as { type?: unknown } | null)?.type;
+        const detail = err instanceof Error ? err.message : String(err);
         if (
           messageType === "ADD_CURRENT_PAGE_TO_POPUP" ||
           messageType === "ADD_PAGE_CANDIDATE_TO_POPUP"
@@ -95,11 +96,23 @@ export function registerMessageRouter(
           });
           return;
         }
+        if (messageType === "TEST_CONNECTION") {
+          sendResponse({
+            type: "STATUS",
+            status: { ok: false, message: detail },
+          });
+          return;
+        }
+        // GET_SOURCES / GET_SETTINGS / SAVE_SETTINGS / CLEAR_SOURCES /
+        // IMPORT_SOURCES have no failure variant in ExtensionResponse.
+        // IMPORT_RESULT is the only error-carrying shape callers surface
+        // (popup parsers read `.error`; options treats a non-matching type as
+        // failure), so keep it rather than fabricating OK/empty data.
         sendResponse({
           type: "IMPORT_RESULT",
           ok: false,
           count: 0,
-          error: err instanceof Error ? err.message : String(err),
+          error: detail,
         });
       });
     return true;

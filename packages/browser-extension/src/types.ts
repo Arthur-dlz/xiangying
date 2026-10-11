@@ -6,7 +6,7 @@ declare global {
     TDAPP?: {
       onEvent: (
         eventId: string,
-        label: "",
+        label: string,
         mapKv: Record<string, string>,
       ) => void;
     };

@@ -242,6 +242,11 @@ async function handleTabRemoved(
 ): Promise<void> {
   resetPendingInspections(tabId);
   await sources.remove(tabId);
+  // Terminal cleanup: the tab is gone, so drop its generation entry instead of
+  // retaining one slot per tab id ever observed (unbounded in a respawned MV3
+  // worker). In-flight work captured a generation that no longer matches once
+  // the key is absent.
+  tabGenerations.delete(tabId);
 }
 
 /* --------------------------------------------------------------------- */

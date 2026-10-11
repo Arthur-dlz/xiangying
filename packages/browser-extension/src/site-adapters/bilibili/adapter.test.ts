@@ -116,6 +116,18 @@ describe("Bilibili page adapter", () => {
     expect(findPageAdapter({ hostname: "www.bilibili.com" })).toBe(
       bilibiliPageAdapter,
     );
+    expect(findPageAdapter({ hostname: "bilibili.com" })).toBe(
+      bilibiliPageAdapter,
+    );
+    expect(findPageAdapter({ hostname: "m.bilibili.com" })).toBe(
+      bilibiliPageAdapter,
+    );
+    expect(findPageAdapter({ hostname: "live.bilibili.com" })).toBe(
+      bilibiliPageAdapter,
+    );
+    expect(findPageAdapter({ hostname: "WWW.BILIBILI.COM" })).toBe(
+      bilibiliPageAdapter,
+    );
     expect(findPageAdapter({ hostname: "example.com" })).toBeNull();
   });
 });
