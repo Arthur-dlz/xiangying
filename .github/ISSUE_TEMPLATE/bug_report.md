@@ -1,9 +1,9 @@
 ---
 name: 问题反馈
 about: 报告乡映使用中遇到的问题
-title: ''
-labels: ''
-assignees: ''
+title: ""
+labels: ""
+assignees: ""
 ---
 
 版本与Windows版本：
