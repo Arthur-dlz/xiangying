@@ -44,5 +44,7 @@ apps/electron/release-slim/
 *.zip
 *.7z
 *.m4s
+# ...except the committed media-service test fixtures (see tests/media-service/README.md)
+!tests/media-service/public/**/*.m4s
 .env.local
 .env.*.local
