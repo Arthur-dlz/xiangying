@@ -73,29 +73,49 @@ export function useBrowserActions() {
 
   const goHome = useMemoizedFn(async (tabId?: string) => {
     const targetTabId = tabId || useBrowserStore.getState().activeTabId;
-    await browser.home(targetTabId);
-    updateTab(targetTabId, {
-      url: "",
-      title: "",
-      mode: "home",
-      status: "default",
-      errorCode: undefined,
-      errorMessage: undefined,
-    });
-    useBrowserStore.getState().clearSources(targetTabId);
+    try {
+      await browser.home(targetTabId);
+      updateTab(targetTabId, {
+        url: "",
+        title: "",
+        mode: "home",
+        status: "default",
+        errorCode: undefined,
+        errorMessage: undefined,
+      });
+      useBrowserStore.getState().clearSources(targetTabId);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to go home";
+      toast.error(message);
+    }
   });
 
   const goBack = useMemoizedFn(async (tabId?: string) => {
     const targetTabId = tabId || useBrowserStore.getState().activeTabId;
-    const navigated = await browser.back(targetTabId);
-    if (!navigated) await goHome(targetTabId);
-    return navigated;
+    try {
+      const navigated = await browser.back(targetTabId);
+      if (!navigated) await goHome(targetTabId);
+      return navigated;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to go back";
+      toast.error(message);
+      return false;
+    }
   });
 
   const reload = useMemoizedFn(async (tabId?: string) => {
     const targetTabId = tabId || useBrowserStore.getState().activeTabId;
     updateTab(targetTabId, { status: "loading" });
-    await browser.reload(targetTabId);
+    try {
+      await browser.reload(targetTabId);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to reload browser tab";
+      updateTab(targetTabId, { status: "failed", errorMessage: message });
+      toast.error(message);
+    }
   });
 
   return {

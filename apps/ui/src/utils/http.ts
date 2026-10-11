@@ -2,11 +2,30 @@ import i18n from "@/i18n";
 import { useAppStore } from "@/store/app";
 import axios, { type InternalAxiosRequestConfig } from "axios";
 
+// Shared sign-in route used by every auth-redirect path below.
+const SIGNIN_PATH = "/signin";
+
 // Go Core axios instance
 const http = axios.create({});
 
 function shouldSkipAuthRedirect(config?: InternalAxiosRequestConfig) {
   return config?.suppressAuthRedirect === true;
+}
+
+// redirectToSignin clears any stale apiKey and navigates to sign-in exactly
+// once. Guarding on the current path avoids a redirect loop when the sign-in
+// request itself returns 401.
+function redirectToSignin() {
+  if (window.location.pathname.startsWith(SIGNIN_PATH)) return;
+  useAppStore.getState().setAppStore({ apiKey: "" });
+  window.location.pathname = SIGNIN_PATH;
+}
+
+// isPlainJsonObject reports whether value is a plain JSON object (as opposed to
+// FormData/Blob/ArrayBuffer/string bodies), i.e. one that can safely carry an
+// injected `auth` field that survives serialization.
+function isPlainJsonObject(value: unknown): value is Record<string, unknown> {
+  return Object.prototype.toString.call(value) === "[object Object]";
 }
 
 function applyLanguageHeader(config: InternalAxiosRequestConfig) {
@@ -43,7 +62,7 @@ http.interceptors.response.use(
         return res.data;
       }
       if (res.code === 401 && !shouldSkipAuthRedirect(response.config)) {
-        window.location.pathname = "/signin";
+        redirectToSignin();
       }
       return Promise.reject(new Error(res.message || i18n.t("unknownError")));
     }
@@ -52,14 +71,8 @@ http.interceptors.response.use(
   },
   (error) => {
     const resp = error.response;
-    if (
-      resp &&
-      resp.status === 401 &&
-      !shouldSkipAuthRedirect(error.config) &&
-      !window.location.pathname.startsWith("/signin")
-    ) {
-      useAppStore.getState().setAppStore({ apiKey: "" });
-      window.location.pathname = "/signin";
+    if (resp && resp.status === 401 && !shouldSkipAuthRedirect(error.config)) {
+      redirectToSignin();
     }
     // Go Core's error responses follow { success: false, message } too;
     // surface the translated server message instead of Axios's default
@@ -82,12 +95,16 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     applyLanguageHeader(config);
-    if (!config.data) {
-      config.data = {};
+    let data = config.data;
+    if (data === undefined || data === null) {
+      data = {};
+      config.data = data;
     }
-    if (!config.data.auth) {
-      const appStore = useAppStore.getState();
-      config.data.auth = appStore.apiKey;
+    // Only inject `auth` into plain JSON bodies. For FormData/Blob/ArrayBuffer
+    // or string bodies, setting `.auth` would not be serialized (auth silently
+    // dropped) or could throw in strict mode.
+    if (isPlainJsonObject(data) && !data.auth) {
+      data.auth = useAppStore.getState().apiKey;
     }
     return Promise.resolve(config);
   },

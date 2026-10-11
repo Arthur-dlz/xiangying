@@ -22,15 +22,22 @@ export function useAdapterBootstrap() {
     const initialize = () => {
       void initializeAdapter().then((config) => {
         if (!active) return;
-        setAdapterReady(true);
 
         if (!config) {
-          if (!canLoadProtectedConfig()) return;
-          retryTimer = setTimeout(initialize, 1000);
+          // No config loaded yet. Only unblock the app when no protected
+          // config is expected (e.g. web before sign-in); otherwise keep
+          // retrying so protected routes and PAGE_LOAD stay gated until
+          // configuration is actually applied.
+          if (!canLoadProtectedConfig()) {
+            setAdapterReady(true);
+          } else {
+            retryTimer = setTimeout(initialize, 1000);
+          }
           return;
         }
 
         applyInitialConfig(config);
+        setAdapterReady(true);
       });
     };
 

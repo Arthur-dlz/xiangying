@@ -14,7 +14,7 @@ export function useAuthApi() {
 
   const setupAuth = async (password: string): Promise<string> => {
     const apiKey = await setupApi(password);
-    mutate();
+    await mutate();
     return apiKey;
   };
 

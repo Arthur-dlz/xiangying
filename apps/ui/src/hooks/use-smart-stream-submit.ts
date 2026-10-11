@@ -5,6 +5,7 @@ import type {
   SourceInspection,
 } from "@mediago/core-sdk";
 import { DownloadType, type DownloadTask } from "@mediago/common";
+import { useLatest } from "ahooks";
 import { useEffect, useRef, useState } from "react";
 import { createDownloadTasks, getDownloadTasks } from "@/api/download-task";
 import {
@@ -184,6 +185,7 @@ export async function runSmartStreamDiscovery(
     input.signal,
   );
   input.onDiscoveryCreated?.(discovery.id);
+  const startedAt = Date.now();
   const pollUntilDone = async (
     current: DiscoveryJob,
   ): Promise<DiscoveryJob> => {
@@ -191,9 +193,13 @@ export async function runSmartStreamDiscovery(
       return current;
     }
     await dependencies.wait(input.signal);
-    return pollUntilDone(
-      await dependencies.getDiscovery(current.id, input.signal),
-    );
+    const next = await dependencies.getDiscovery(current.id, input.signal);
+    // Enforce the timeout locally as well: DISCOVERY_TIMEOUT_MS is only a hint
+    // to the server, so a stuck job would otherwise poll forever.
+    if (Date.now() - startedAt > DISCOVERY_TIMEOUT_MS) {
+      return { ...next, status: "failed", errorCode: "discovery_timeout" };
+    }
+    return pollUntilDone(next);
   };
   discovery = await pollUntilDone(discovery);
   return terminalDiscoveryResult(discovery);
@@ -234,6 +240,10 @@ const initialView = (): SmartStreamSubmitView => ({
 
 export function useSmartStreamSubmit() {
   const [view, setView] = useState<SmartStreamSubmitView>(initialView);
+  // Mirror the latest view so confirm() validates against fresh state even when
+  // the caller holds a stale closure (e.g. the component re-rendered after
+  // begin(), or another begin()/cancel() already moved the machine).
+  const viewRef = useLatest(view);
   const controllerRef = useRef<AbortController | null>(null);
   const contextRef = useRef<SubmissionContext | null>(null);
   const discoveryIdRef = useRef<string | undefined>(undefined);
@@ -327,6 +337,15 @@ export function useSmartStreamSubmit() {
         // Discovery remains usable if the duplicate preflight is unavailable;
         // the authoritative Core still rejects a concurrent duplicate.
       }
+      // A newer begin()/cancel() may have superseded this run during the
+      // preflight await; re-check before committing the view and discovery id
+      // so a stale run cannot clobber the newer one.
+      if (controller.signal.aborted || controllerRef.current !== controller) {
+        throw (
+          controller.signal.reason ??
+          new Error("Smart stream submit superseded")
+        );
+      }
       const sources = prepareSmartStreamSources(result.sources, {
         existingUrls,
         requestedName: values.name,
@@ -355,11 +374,12 @@ export function useSmartStreamSubmit() {
     names: Record<string, string>,
     variantUrls: Record<string, string>,
   ): Promise<void> => {
+    const currentView = viewRef.current;
     const context = contextRef.current;
-    if (!context || view.machine.phase !== "selecting") {
+    if (!context || currentView.machine.phase !== "selecting") {
       throw new Error("Smart stream selection is not ready");
     }
-    const selected = view.sources.filter(
+    const selected = currentView.sources.filter(
       (source) => source.available && sourceIds.includes(source.id),
     );
     if (selected.length === 0) throw new Error("Select at least one source");
@@ -375,11 +395,14 @@ export function useSmartStreamSubmit() {
       startDownload: context.intent.startDownload,
     };
     try {
-      if (view.discoveryId) {
+      if (currentView.discoveryId) {
         if (context.intent.target === "docker") {
-          await createDockerSourceDiscoveryDownloads(view.discoveryId, params);
+          await createDockerSourceDiscoveryDownloads(
+            currentView.discoveryId,
+            params,
+          );
         } else {
-          await createSourceDiscoveryDownloads(view.discoveryId, params);
+          await createSourceDiscoveryDownloads(currentView.discoveryId, params);
         }
       } else {
         const tasks: Omit<DownloadTask, "id">[] = selected.map((source) => ({

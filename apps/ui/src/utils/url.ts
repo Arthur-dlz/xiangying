@@ -41,6 +41,13 @@ export function isUrl(string: string) {
  * @returns boolean Returns true if the URL is encoded, false otherwise
  */
 export function isEncodedURL(url: string): boolean {
-  // If the decoded URL differs from the original, the URL was encoded
-  return decodeURIComponent(url) !== url;
+  // If the decoded URL differs from the original, the URL was encoded.
+  // Malformed percent-encoding (e.g. a bare "%", "%zz", or a truncated
+  // escape) makes decodeURIComponent throw; treat that as "not encoded"
+  // instead of letting the URIError escape to the caller.
+  try {
+    return decodeURIComponent(url) !== url;
+  } catch {
+    return false;
+  }
 }

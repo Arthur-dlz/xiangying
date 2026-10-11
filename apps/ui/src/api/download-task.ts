@@ -1,6 +1,7 @@
 import { http } from "@/utils";
 import { useAppStore } from "@/store/app";
 import type {
+  DownloadStatus,
   DownloadTask,
   DownloadTaskPagination,
   DownloadTaskResponse,
@@ -59,7 +60,7 @@ export const exportDownloadList = (): Promise<string> =>
 
 export const updateDownloadStatus = (
   ids: number[],
-  status: number,
+  status: DownloadStatus,
 ): Promise<void> => http.put("/api/downloads/status", { ids, status });
 
 export const getActiveTasks = (): Promise<Video[]> =>
